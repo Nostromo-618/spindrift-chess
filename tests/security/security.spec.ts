@@ -10,10 +10,8 @@ test.describe("Security - Input Validation", () => {
   test("should validate difficulty input", async ({ page }) => {
     await page.evaluate(() => localStorage.setItem("sdc-difficulty", "999"));
     await page.reload();
-    await page.waitForSelector("#difficulty-choice button.vd-is-active");
-    const level = await page.evaluate(() =>
-      document.querySelector("#difficulty-choice button.vd-is-active")?.getAttribute("data-level"),
-    );
+    await expect(page.locator("#strength-slider")).toBeVisible();
+    const level = await page.locator("#strength-slider").inputValue();
     expect(Number(level)).toBeGreaterThanOrEqual(1);
     expect(Number(level)).toBeLessThanOrEqual(6);
   });

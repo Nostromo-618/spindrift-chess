@@ -87,7 +87,7 @@ test.describe("LocalStorage: Difficulty Persistence", () => {
   test("saves selected difficulty to localStorage", async ({ page }) => {
     await acceptDisclaimer(page);
 
-    await page.locator('#difficulty-choice button[data-level="4"]').click();
+    await page.locator("#strength-slider").fill("4");
     await page.click("#new-game-btn");
     await page.waitForSelector('.chess-piece[data-piece="wP"]');
 
@@ -101,9 +101,7 @@ test.describe("LocalStorage: Difficulty Persistence", () => {
     await page.evaluate(() => localStorage.setItem("sdc-difficulty", "5"));
     await page.reload();
 
-    await expect(page.locator('#difficulty-choice button[data-level="5"]')).toHaveClass(
-      /vd-is-active/,
-    );
+    await expect(page.locator("#strength-slider")).toHaveValue("5");
   });
 });
 

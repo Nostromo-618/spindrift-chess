@@ -18,9 +18,7 @@ const version = `v${__APP_VERSION__}`;
       {{ version }}
     </button>
     <p class="side-panel-attribution">
-      <a href="https://vanduo.dev/" target="_blank" rel="noopener noreferrer">
-        UI powered by Vanduo UI
-      </a>
+      <a href="https://vd3.vanduo.dev/" target="_blank" rel="noopener noreferrer"> UI by vd3 </a>
     </p>
   </div>
 </template>

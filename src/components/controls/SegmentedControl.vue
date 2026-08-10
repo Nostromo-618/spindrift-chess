@@ -71,7 +71,7 @@ function select(value: string | number): void {
   >
     <div v-if="label" :id="resolvedLabelId" class="settings-label">
       {{ label }}
-      <i v-if="disabled" class="ph-duotone ph-lock-simple settings-lock" aria-hidden="true"></i>
+      <i v-if="disabled" class="ph-bold ph-lock-simple settings-lock" aria-hidden="true"></i>
     </div>
     <div
       :id="id"

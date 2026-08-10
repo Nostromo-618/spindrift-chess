@@ -42,7 +42,7 @@ test.describe("AI Levels - Smoke Tests", () => {
       await acceptDisclaimer(page);
 
       await page.locator('#color-choice button[data-color="white"]').click();
-      await page.locator(`#difficulty-choice button[data-level="${level}"]`).click();
+      await page.locator("#strength-slider").fill(String(level));
 
       await page.click("#new-game-btn");
       await page.waitForSelector('.chess-piece[data-piece="wP"]');
@@ -69,7 +69,7 @@ test.describe("AI Levels - Full Game Tests", () => {
       await acceptDisclaimer(page);
 
       await page.locator('#color-choice button[data-color="white"]').click();
-      await page.locator(`#difficulty-choice button[data-level="${level}"]`).click();
+      await page.locator("#strength-slider").fill(String(level));
 
       await page.click("#new-game-btn");
       await page.waitForSelector('.chess-piece[data-piece="wP"]');

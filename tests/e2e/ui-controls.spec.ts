@@ -63,37 +63,33 @@ test.describe("UI Controls", () => {
   });
 
   test.describe("Difficulty Selection", () => {
-    test("should have all 6 difficulty levels", async ({ page }) => {
-      const buttons = page.locator("#difficulty-choice button[data-level]");
-      await expect(buttons).toHaveCount(6);
+    test("should show Spindrift strength slider (levels 1–6)", async ({ page }) => {
+      const slider = page.locator("#strength-slider");
+      await expect(slider).toBeVisible();
+      await expect(slider).toHaveAttribute("min", "1");
+      await expect(slider).toHaveAttribute("max", "6");
+      await expect(page.getByText("Spindrift strength", { exact: true })).toBeVisible();
     });
 
-    test("should display descriptive difficulty names", async ({ page }) => {
-      await expect(page.locator('#difficulty-choice button[data-level="1"]')).toHaveAttribute(
-        "title",
-        "Very Easy",
-      );
-      await expect(page.locator('#difficulty-choice button[data-level="3"]')).toHaveAttribute(
-        "title",
-        "Medium",
-      );
-      await expect(page.locator('#difficulty-choice button[data-level="5"]')).toHaveAttribute(
-        "title",
-        "Very Hard",
-      );
-      await expect(page.locator('#difficulty-choice button[data-level="6"]')).toHaveAttribute(
-        "title",
-        "Expert",
-      );
+    test("should default to level 3", async ({ page }) => {
+      await expect(page.locator("#strength-slider")).toHaveValue("3");
     });
 
     test("should allow changing difficulty", async ({ page }) => {
       for (const level of ["1", "2", "3", "4", "5", "6"]) {
-        await page.locator(`#difficulty-choice button[data-level="${level}"]`).click();
-        await expect(page.locator(`#difficulty-choice button[data-level="${level}"]`)).toHaveClass(
-          /vd-is-active/,
-        );
+        await page.locator("#strength-slider").fill(level);
+        await expect(page.locator("#strength-slider")).toHaveValue(level);
       }
+    });
+
+    test("uncapped switch reveals thinking-time slider", async ({ page }) => {
+      const strengthBlock = page.locator("#difficulty-choice");
+      await strengthBlock.scrollIntoViewIfNeeded();
+      await page.getByText("Uncapped Spindrift strength").click();
+      await expect(page.locator("#strength-slider")).toHaveCount(0);
+      await expect(page.locator("#think-time-slider")).toBeVisible();
+      await expect(page.locator("#think-time-slider")).toHaveAttribute("min", "1");
+      await expect(page.locator("#think-time-slider")).toHaveAttribute("max", "60");
     });
   });
 

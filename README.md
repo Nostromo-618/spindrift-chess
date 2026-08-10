@@ -1,32 +1,22 @@
 # Spindrift Chess
 
-Pure client-side chess: **human vs Spindrift Engine**. Vue 3 + TypeScript + [Vanduo vd3](https://vanduo.dev). No accounts, no server — all computation runs in the browser.
+<p align="left">
+  <img src="public/brand/spindrift-rook.svg" alt="Spindrift Chess" width="48" height="48" />
+</p>
 
-## Features
+Browser chess: human vs the Spindrift Engine. Vue 3 + TypeScript + [vd3](https://vd3.vanduo.dev/). No accounts or server — everything runs client-side.
 
-- Spindrift Engine with 6 strength levels (1–3 stay CPU-light; 4–6 are time-managed)
-- Undo, local persistence (`sdc-*` keys), theme switching via vd3
-- CC0 Merida-style piece SVGs
+Brand mark: amber rook at [`public/brand/spindrift-rook.svg`](public/brand/spindrift-rook.svg) (also used as [`public/favicon.svg`](public/favicon.svg)).
+
+Behavioral contracts live under [`openspec/`](openspec/).
 
 ## Develop
 
 ```bash
 pnpm install
-pnpm dev          # http://localhost:5173
-pnpm run verify   # typecheck + lint + format + unit coverage + baseline + self-play + e2e quick
+pnpm dev            # http://localhost:5173
+pnpm run verify     # typecheck, lint, format, coverage, baseline, self-play, e2e quick
 ```
-
-## Tests
-
-| Command                   | What                                                       |
-| ------------------------- | ---------------------------------------------------------- |
-| `pnpm run test:unit`      | Vitest unit/engine                                         |
-| `pnpm run test:coverage`  | Vitest with coverage thresholds                            |
-| `pnpm run test:baseline`  | Tactical / timeout / short self-play gate                  |
-| `pnpm run test:selfplay`  | Full Spindrift-vs-Spindrift games at levels 1–6 (parallel) |
-| `pnpm run test:e2e:quick` | Playwright (excludes Full Game Tests)                      |
-
-Self-play env knobs: `SPINDRIFT_SELFPLAY_GAMES`, `SPINDRIFT_SELFPLAY_MOVETIME`, `SPINDRIFT_SELFPLAY_JOBS`.
 
 ## License
 

@@ -11,7 +11,7 @@ const { status } = store;
   <section class="status-panel" aria-label="Game status">
     <div class="status-bar" :class="{ 'is-busy': status.busy }">
       <VdChip v-if="status.busy" variant="primary" class="status-thinking">
-        <i class="ph-duotone ph-brain blinking" aria-hidden="true"></i>
+        <i class="ph-bold ph-brain blinking" aria-hidden="true"></i>
         Thinking
       </VdChip>
       <div id="status-text" class="status-text" role="status" aria-live="polite">

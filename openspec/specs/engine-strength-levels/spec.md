@@ -59,3 +59,21 @@ as an equal alternative.
 
 - **WHEN** level 6 selects a move
 - **THEN** it plays the move with the best search score with no random substitution
+
+### Requirement: Optional uncapped human-play mode
+
+The product MAY expose an uncapped strength mode for human play. When uncapped
+is enabled, the engine SHALL use the level-6 search policy with no per-level
+depth cap other than a safety ceiling of 56 ply, and SHALL stop when the
+configured per-move thinking time expires. Time SHALL be the binding constraint
+in typical positions.
+
+#### Scenario: Uncapped respects think time
+
+- **WHEN** uncapped search is run with a finite movetime
+- **THEN** iterative deepening continues until the time budget (or the 56-ply ceiling) stops it
+
+#### Scenario: Capped levels unchanged when uncapped is off
+
+- **WHEN** uncapped is disabled
+- **THEN** levels 1–6 keep their existing depth caps and per-level movetime budgets

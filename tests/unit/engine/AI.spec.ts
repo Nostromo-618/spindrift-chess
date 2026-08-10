@@ -215,19 +215,22 @@ describe("AI - Uncapped search", () => {
     });
     const cappedDepth = cappedAI.getLastSearchInfo().depthCompleted;
 
+    // Sparse endgames deepen slowly; give uncapped enough wall time to finish
+    // an iteration past the level-6 depth cap (22) on CI and laptop CPUs.
     const uncappedAI = new AI();
     await uncappedAI.findBestMove(buildState(sparse), {
       level: 6,
       forColor: "white",
-      timeout: 4000,
+      timeout: 10_000,
       uncapped: true,
     });
     const uncappedDepth = uncappedAI.getLastSearchInfo().depthCompleted;
 
     expect(cappedDepth).toBeLessThanOrEqual(22);
+    expect(uncappedDepth).toBeGreaterThan(cappedDepth);
     expect(uncappedDepth).toBeGreaterThanOrEqual(22);
     expect(uncappedDepth).toBeLessThanOrEqual(56);
-  }, 20_000);
+  }, 30_000);
 
   it("is deterministic on a forcing promotion", async () => {
     const run = async () => {

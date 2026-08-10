@@ -74,7 +74,7 @@ function newGame(): void {
     </div>
     <template #footer>
       <VdButton id="game-end-new-game-btn" variant="primary" @click="newGame">
-        <i class="ph-duotone ph-flag-checkered" aria-hidden="true"></i>
+        <i class="ph-bold ph-flag-checkered" aria-hidden="true"></i>
         New Game
       </VdButton>
       <VdButton id="game-end-close-btn" variant="ghost" @click="open = false">Close</VdButton>

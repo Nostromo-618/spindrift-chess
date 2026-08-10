@@ -59,7 +59,7 @@ test.describe("Undo Move", () => {
   });
 
   test("undoes own move and the computer reply", async ({ page }) => {
-    await page.locator('#difficulty-choice button[data-level="1"]').click();
+    await page.locator("#strength-slider").fill("1");
     await page.locator('#color-choice button[data-color="white"]').click();
     await page.click("#new-game-btn");
     await page.waitForSelector('.chess-piece[data-piece="wP"]');

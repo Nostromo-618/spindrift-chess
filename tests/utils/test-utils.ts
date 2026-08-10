@@ -21,6 +21,20 @@ export async function acceptDisclaimer(page: {
   await page.reload();
 }
 
+/** Set the Spindrift strength range slider (levels 1–6). */
+export async function setStrengthLevel(
+  page: {
+    locator: (sel: string) => {
+      fill: (v: string) => Promise<void>;
+      inputValue: () => Promise<string>;
+    };
+  },
+  level: number,
+): Promise<void> {
+  const slider = page.locator("#strength-slider");
+  await slider.fill(String(level));
+}
+
 /**
  * Convert algebraic notation to board index.
  */

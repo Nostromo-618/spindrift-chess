@@ -17,7 +17,7 @@ const { changelogOpen } = useModals();
           <div class="version-meta">
             <VdBadge variant="secondary">{{ entry.version }}</VdBadge>
             <span class="version-date">
-              <i class="ph-duotone ph-calendar-dots" aria-hidden="true"></i>
+              <i class="ph-bold ph-calendar-dots" aria-hidden="true"></i>
               {{ entry.date }}
             </span>
             <VdBadge v-if="entry.latest" variant="primary">Latest</VdBadge>
@@ -32,7 +32,7 @@ const { changelogOpen } = useModals();
                 <h5>{{ group.title }}</h5>
                 <ul class="change-list">
                   <li v-for="(item, i) in group.items || []" :key="i" class="change-item">
-                    <i class="ph-duotone" :class="item.icon" aria-hidden="true"></i>
+                    <i class="ph-bold" :class="item.icon" aria-hidden="true"></i>
                     <div>
                       <strong>{{ item.title }}</strong>
                       <p>{{ item.body }}</p>

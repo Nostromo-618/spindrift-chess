@@ -7,6 +7,7 @@ import {
   type SpindriftAdapter,
   type SearchInfo,
 } from "./engineAdapter.js";
+import { MIN_THINK_TIME_MS, MAX_THINK_TIME_MS } from "./storage.js";
 import type {
   Color,
   Move,
@@ -35,11 +36,15 @@ export interface PlayerSelectionResult {
 export interface GameOptions {
   playerColor: ColorChoice;
   difficulty?: number;
+  uncapped?: boolean;
+  thinkTimeMs?: number;
   onUpdate?: (snapshot: GameSnapshot) => void;
 }
 
 export interface FromSavedOptions {
   difficulty?: number;
+  uncapped?: boolean;
+  thinkTimeMs?: number;
   onUpdate?: (snapshot: GameSnapshot) => void;
 }
 
@@ -62,8 +67,10 @@ export class Game {
   state: GameState;
   difficulty!: number;
   aiMoveTimeMs: number;
+  /** When true, search uses uncapped depth (time-bound). */
+  uncapped: boolean;
 
-  constructor({ playerColor, difficulty, onUpdate }: GameOptions) {
+  constructor({ playerColor, difficulty, uncapped, thinkTimeMs, onUpdate }: GameOptions) {
     this.ai = new AI();
     this.spindriftAdapter = createEngineAdapter(ENGINE_IDS.SPINDRIFT, {
       ai: this.ai,
@@ -81,7 +88,9 @@ export class Game {
     this.state = GameState.createStarting(resolvedPlayerColor);
 
     this.setDifficulty(difficulty || 6);
-    this.aiMoveTimeMs = 10000;
+    this.uncapped = Boolean(uncapped);
+    this.aiMoveTimeMs =
+      typeof thinkTimeMs === "number" && Number.isFinite(thinkTimeMs) ? thinkTimeMs : 10000;
     this.notify();
   }
 
@@ -90,7 +99,7 @@ export class Game {
    */
   static fromSaved(
     serialized: ConstructorParameters<typeof GameState>[0],
-    { difficulty, onUpdate }: FromSavedOptions = {},
+    { difficulty, uncapped, thinkTimeMs, onUpdate }: FromSavedOptions = {},
   ): Game {
     const instance = Object.create(Game.prototype) as Game;
     instance.ai = new AI();
@@ -103,7 +112,9 @@ export class Game {
     instance.setDifficulty(
       difficulty || (serialized as { difficulty?: number } | null)?.difficulty || 6,
     );
-    instance.aiMoveTimeMs = 10000;
+    instance.uncapped = Boolean(uncapped);
+    instance.aiMoveTimeMs =
+      typeof thinkTimeMs === "number" && Number.isFinite(thinkTimeMs) ? thinkTimeMs : 10000;
     instance.state.updateStatusText();
     instance.notify();
     return instance;
@@ -114,12 +125,24 @@ export class Game {
     this.difficulty = clamped;
   }
 
+  setUncapped(on: boolean): void {
+    this.uncapped = Boolean(on);
+  }
+
+  setThinkTimeMs(ms: number): void {
+    const n = Number(ms);
+    if (!Number.isFinite(n)) return;
+    this.aiMoveTimeMs = Math.max(MIN_THINK_TIME_MS, Math.min(MAX_THINK_TIME_MS, Math.round(n)));
+  }
+
   /**
    * Per-move time budget (ms) for human play, by difficulty. Levels 1–3 finish
    * at their tiny fixed depth well within any budget (kept snappy/CPU-light);
-   * levels 4–6 deepen to fill their budget.
+   * levels 4–6 deepen to fill their budget. Uncapped mode always uses
+   * `aiMoveTimeMs`.
    */
   moveTimeForDifficulty(): number {
+    if (this.uncapped) return this.aiMoveTimeMs;
     switch (this.difficulty) {
       case 1:
         return 400;
@@ -297,6 +320,7 @@ export class Game {
       signal,
       onInfo,
       forColor: aiColor,
+      uncapped: this.uncapped,
       // Positions since the last irreversible move, so the search can detect a
       // repetition draw across played moves (not just within its own tree).
       history: this.state.getReversibleHistory(),

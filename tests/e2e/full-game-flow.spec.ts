@@ -10,7 +10,7 @@ test.describe("Full Game Tests", () => {
   test.beforeEach(async ({ page }) => {
     await acceptDisclaimer(page);
     await page.locator('#color-choice button[data-color="white"]').click();
-    await page.locator('#difficulty-choice button[data-level="1"]').click();
+    await page.locator("#strength-slider").fill("1");
   });
 
   async function makeMove(page: Page, from: string, to: string): Promise<void> {

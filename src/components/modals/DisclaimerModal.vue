@@ -23,7 +23,7 @@ function accept(): void {
     <template #header>
       <div class="disclaimer-modal-heading">
         <span class="disclaimer-modal-icon">
-          <i class="ph-duotone ph-chess-piece" aria-hidden="true"></i>
+          <i class="ph-bold ph-strategy" aria-hidden="true"></i>
         </span>
         <h2 id="disclaimer-modal-title" class="disclaimer-modal-title">
           Welcome to Spindrift Chess
@@ -39,50 +39,42 @@ function accept(): void {
 
       <ul class="disclaimer-list">
         <li>
-          <i class="ph-duotone ph-info" aria-hidden="true"></i>
+          <i class="ph-bold ph-info" aria-hidden="true"></i>
           <div class="disclaimer-li-body">
             <strong>For entertainment only.</strong> The computer engine is a hobby project and is
             not a professional chess engine.
           </div>
         </li>
         <li>
-          <i class="ph-duotone ph-database" aria-hidden="true"></i>
+          <i class="ph-bold ph-database" aria-hidden="true"></i>
           <div class="disclaimer-li-body">
             <strong>Local storage.</strong> Your settings and game progress are saved
             <em>only</em> in your browser's local storage. Nothing is sent to any server.
           </div>
         </li>
         <li>
-          <i class="ph-duotone ph-code" aria-hidden="true"></i>
+          <i class="ph-bold ph-code" aria-hidden="true"></i>
           <div class="disclaimer-li-body">
             <strong>Open source.</strong> This project is provided as-is under the MIT licence with
             no warranty of any kind.
           </div>
         </li>
         <li>
-          <i class="ph-duotone ph-chess-knight" aria-hidden="true"></i>
+          <i class="ph-bold ph-horse" aria-hidden="true"></i>
           <div class="disclaimer-li-body">
-            <strong>Piece artwork.</strong> The board pieces are derived from the classic Wikipedia
-            / Wikimedia Commons chess SVG set and are released under
+            <strong>Piece artwork.</strong> The board pieces are original Spindrift artwork,
+            licensed with the project under the
             <a
-              href="https://creativecommons.org/publicdomain/zero/1.0/"
+              href="https://github.com/Nostromo-618/spindrift-chess/blob/main/LICENSE"
               target="_blank"
               rel="noopener noreferrer"
               class="disclaimer-inline-link"
-              >CC0 1.0 Universal</a
-            >. See
-            <a
-              href="https://github.com/Nostromo-618/spindrift-chess/blob/main/THIRD_PARTY_NOTICES.md"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="disclaimer-inline-link"
-              >THIRD_PARTY_NOTICES.md</a
-            >
-            for licence details.
+              >MIT Licence</a
+            >.
           </div>
         </li>
         <li>
-          <i class="ph-duotone ph-star" aria-hidden="true"></i>
+          <i class="ph-bold ph-star" aria-hidden="true"></i>
           <div class="disclaimer-li-body">
             <strong>Support the project.</strong> If you enjoy Spindrift Chess, please consider
             starring the repository on GitHub:
@@ -111,7 +103,7 @@ function accept(): void {
         class="disclaimer-accept-btn"
         @click="accept"
       >
-        <i class="ph-duotone ph-check-circle" aria-hidden="true"></i>
+        <i class="ph-bold ph-check-circle" aria-hidden="true"></i>
         Accept &amp; Play
       </VdButton>
     </template>

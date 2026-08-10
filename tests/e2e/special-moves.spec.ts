@@ -10,7 +10,7 @@ test.describe("Special Moves", () => {
   test.beforeEach(async ({ page }) => {
     await acceptDisclaimer(page);
     await page.locator('#color-choice button[data-color="white"]').click();
-    await page.locator('#difficulty-choice button[data-level="1"]').click();
+    await page.locator("#strength-slider").fill("1");
   });
 
   async function makeMove(page: Page, from: string, to: string): Promise<void> {
@@ -115,38 +115,50 @@ test.describe("Special Moves", () => {
   });
 
   test("should capture diagonally with pawn", async ({ page }) => {
-    test.slow();
+    // Deterministic setup: do not rely on AI replies (e5 can end blocked with 0 moves).
+    const board = new Array(64).fill(null);
+    board[4] = "wK"; // e1
+    board[60] = "bK"; // e8
+    board[36] = "wP"; // e5
+    board[43] = "bP"; // d6 — diagonal capture target
 
-    await page.click("#new-game-btn");
-    await page.waitForSelector('.chess-piece[data-piece="wP"]');
-
-    await makeMove(page, "e2", "e4");
-    await waitForAIMove(page);
-
-    await makeMove(page, "e4", "e5");
-    await waitForAIMove(page);
-
-    await page.locator("#board-container").scrollIntoViewIfNeeded();
-
-    await page.waitForFunction(
-      () => {
-        const t = document.querySelector("#status-text")?.textContent || "";
-        return t.includes("Your move");
+    await page.evaluate(
+      (saved) => {
+        localStorage.setItem("sdc-game", JSON.stringify(saved));
+        localStorage.setItem("sdc-difficulty", "1");
+        localStorage.setItem("sdc-color", "white");
       },
-      { timeout: 15000 },
+      {
+        board,
+        activeColor: "white",
+        playerColor: "white",
+        castlingRights: {
+          white: { kingSide: false, queenSide: false },
+          black: { kingSide: false, queenSide: false },
+        },
+        enPassantTarget: null,
+        halfmoveClock: 0,
+        fullmoveNumber: 1,
+        moveHistory: [],
+        result: null,
+        lastMove: null,
+        repetitionMap: [],
+        reversibleHistory: [],
+      },
     );
+    await page.reload();
 
-    const e5 = page.locator('.chess-square[data-square="e5"]');
-    await expect(e5.locator('.chess-piece[data-piece="wP"]')).toBeVisible({
-      timeout: 20000,
-    });
-    await e5.scrollIntoViewIfNeeded();
+    await expect(
+      page.locator('.chess-square[data-square="e5"] .chess-piece[data-piece="wP"]'),
+    ).toBeVisible();
+    await page.click('.chess-square[data-square="e5"]');
 
-    await e5.click({ force: true });
+    const d6 = page.locator('.chess-square[data-square="d6"]');
+    await expect(d6).toHaveClass(/highlight-legal/);
 
-    const legalMoves = page.locator(".chess-square.highlight-legal");
-    await expect(legalMoves.first()).toBeVisible({ timeout: 20000 });
-    const legalCount = await legalMoves.count();
-    expect(legalCount).toBeGreaterThan(0);
+    await page.click('.chess-square[data-square="d6"]');
+    await expect(
+      page.locator('.chess-square[data-square="d6"] .chess-piece[data-piece="wP"]'),
+    ).toBeVisible();
   });
 });

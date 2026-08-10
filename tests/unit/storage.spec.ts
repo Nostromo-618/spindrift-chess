@@ -7,12 +7,19 @@ import {
   getDisclaimerAccepted,
   getGame,
   getTheme,
+  getUncapped,
+  getThinkTimeMs,
   setBoardSize,
   setColorChoice,
   setDifficulty,
   setDisclaimerAccepted,
   setGame,
   setTheme,
+  setUncapped,
+  setThinkTimeMs,
+  DEFAULT_THINK_TIME_MS,
+  MIN_THINK_TIME_MS,
+  MAX_THINK_TIME_MS,
 } from "../../js/storage.js";
 import { installMemoryLocalStorage } from "../utils/test-utils.js";
 import type { ThemePreference } from "../../js/storage.js";
@@ -82,6 +89,29 @@ describe("Storage", () => {
       expect(getDifficulty()).toBeNull();
       localStorage.setItem("sdc-difficulty", "999");
       expect(getDifficulty()).toBeNull();
+    });
+  });
+
+  describe("Uncapped / think time", () => {
+    it("round-trips uncapped flag", () => {
+      expect(getUncapped()).toBe(false);
+      setUncapped(true);
+      expect(getUncapped()).toBe(true);
+      expect(localStorage.getItem("sdc-uncapped")).toBe("true");
+      setUncapped(false);
+      expect(getUncapped()).toBe(false);
+    });
+
+    it("round-trips and clamps think time", () => {
+      expect(getThinkTimeMs()).toBeNull();
+      setThinkTimeMs(DEFAULT_THINK_TIME_MS);
+      expect(getThinkTimeMs()).toBe(DEFAULT_THINK_TIME_MS);
+      setThinkTimeMs(500);
+      expect(getThinkTimeMs()).toBe(MIN_THINK_TIME_MS);
+      setThinkTimeMs(99_000);
+      expect(getThinkTimeMs()).toBe(MAX_THINK_TIME_MS);
+      localStorage.setItem("sdc-think-time-ms", "nope");
+      expect(getThinkTimeMs()).toBeNull();
     });
   });
 

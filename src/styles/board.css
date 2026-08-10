@@ -135,11 +135,13 @@
 
 .chess-piece-img {
   display: block;
-  width: 100%;
-  height: 100%;
+  width: 88%;
+  height: 88%;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  transform: scaleY(0.93); /* slightly shorter → reads thicker */
+  transform-origin: center center;
   pointer-events: none;
 }
 

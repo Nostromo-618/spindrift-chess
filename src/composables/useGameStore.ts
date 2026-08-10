@@ -11,6 +11,13 @@ import {
   getDisclaimerAccepted,
   getDifficulty,
   setDifficulty,
+  getUncapped,
+  setUncapped as persistUncapped,
+  getThinkTimeMs,
+  setThinkTimeMs as persistThinkTimeMs,
+  DEFAULT_THINK_TIME_MS,
+  MIN_THINK_TIME_MS,
+  MAX_THINK_TIME_MS,
   getGame,
   setGame,
   clearGame,
@@ -20,7 +27,11 @@ import {
   setColorChoice,
   type SerializedGame,
 } from "../../js/storage.js";
+import type { SearchInfo } from "../../js/engineAdapter.js";
 import type { BoardView } from "../../js/ui/BoardView.js";
+
+const MIN_THINK_TIME_SEC = Math.round(MIN_THINK_TIME_MS / 1000);
+const MAX_THINK_TIME_SEC = Math.round(MAX_THINK_TIME_MS / 1000);
 
 const BOARD_SIZE_MIN_PX = 400;
 const BOARD_SIZE_MAX_PX = 800;
@@ -47,6 +58,9 @@ export interface StatusState {
 export interface SettingsState {
   color: ColorChoice;
   difficulty: number;
+  uncapped: boolean;
+  /** Thinking time in seconds for uncapped mode (1–60). */
+  thinkTimeSec: number;
 }
 
 export interface GameEndPayload {
@@ -71,6 +85,8 @@ export interface GameStore {
   undoLastMove: () => void;
   setColor: (color: ColorChoice) => void;
   setDifficultyChoice: (level: number) => void;
+  setUncapped: (on: boolean) => void;
+  setThinkTimeSec: (sec: number) => void;
   setBoardSizeSlider: (v: number) => void;
   getDisclaimerAccepted: typeof getDisclaimerAccepted;
 }
@@ -87,6 +103,8 @@ function createGameStore(): GameStore {
   const settings = reactive<SettingsState>({
     color: getColorChoice() || "random",
     difficulty: getDifficulty() ?? 3,
+    uncapped: getUncapped(),
+    thinkTimeSec: Math.round((getThinkTimeMs() ?? DEFAULT_THINK_TIME_MS) / 1000),
   });
 
   const boardSizeSlider = ref(getBoardSize() ?? BOARD_SIZE_SLIDER_DEFAULT);
@@ -99,6 +117,34 @@ function createGameStore(): GameStore {
   let gameSaveThrottle: ReturnType<typeof setTimeout> | null = null;
   let pendingPromotion: { from: string; to: string } | null = null;
   let previousGameOver = false;
+  let thinkingStartedAt: number | null = null;
+  let thinkingTimer: ReturnType<typeof setInterval> | null = null;
+  let lastSearchInfo: SearchInfo | null = null;
+
+  function formatElapsed(ms: number): string {
+    const sec = Math.max(0, ms) / 1000;
+    return sec < 10 ? `${sec.toFixed(1)}s` : `${Math.round(sec)}s`;
+  }
+
+  function formatNodes(n: number): string {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 10_000) return `${Math.round(n / 1000)}k`;
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+    return String(n);
+  }
+
+  function formatThinkingStatus(info: SearchInfo | null, elapsedMs: number): string {
+    const details: string[] = [];
+    if (info && info.depthCompleted > 0) details.push(`depth ${info.depthCompleted}`);
+    if (info && info.nodes > 0) details.push(`${formatNodes(info.nodes)} nodes`);
+    details.push(formatElapsed(elapsedMs));
+    return `Thinking… ${details.join(" · ")}`;
+  }
+
+  function updateThinkingStatus(): void {
+    if (!status.busy || thinkingStartedAt === null) return;
+    status.text = formatThinkingStatus(lastSearchInfo, performance.now() - thinkingStartedAt);
+  }
 
   function attachBoard(instance: BoardView): void {
     boardView = instance;
@@ -155,9 +201,19 @@ function createGameStore(): GameStore {
   function syncBusyState(isBusy: boolean): void {
     if (isBusy) {
       status.busy = true;
-      status.text = "Computer is thinking...";
+      lastSearchInfo = null;
+      thinkingStartedAt = performance.now();
+      status.text = formatThinkingStatus(null, 0);
+      if (thinkingTimer) clearInterval(thinkingTimer);
+      thinkingTimer = setInterval(updateThinkingStatus, 200);
     } else {
       status.busy = false;
+      if (thinkingTimer) {
+        clearInterval(thinkingTimer);
+        thinkingTimer = null;
+      }
+      thinkingStartedAt = null;
+      lastSearchInfo = null;
       if (game) {
         syncUIWithGame(game.getSnapshot());
       }
@@ -167,17 +223,21 @@ function createGameStore(): GameStore {
   async function initializeGame(): Promise<void> {
     clearGame();
     setDifficulty(settings.difficulty);
+    persistUncapped(settings.uncapped);
+    persistThinkTimeMs(settings.thinkTimeSec * 1000);
 
     gameEndResult.value = null;
     previousGameOver = false;
 
     const playerColor = settings.color;
-    const { difficulty } = settings;
+    const { difficulty, uncapped, thinkTimeSec } = settings;
 
     try {
       game = new Game({
         playerColor,
         difficulty,
+        uncapped,
+        thinkTimeMs: thinkTimeSec * 1000,
         onUpdate: syncUIWithGame,
       });
 
@@ -206,6 +266,8 @@ function createGameStore(): GameStore {
     try {
       game = Game.fromSaved(savedState as Parameters<typeof Game.fromSaved>[0], {
         difficulty: savedDifficulty ?? 3,
+        uncapped: getUncapped(),
+        thinkTimeMs: getThinkTimeMs() ?? DEFAULT_THINK_TIME_MS,
         onUpdate: syncUIWithGame,
       });
 
@@ -298,7 +360,12 @@ function createGameStore(): GameStore {
     isProcessingMove = true;
     syncBusyState(true);
     try {
-      const aiMove = await game.computeAIMove();
+      const aiMove = await game.computeAIMove({
+        onInfo: (info) => {
+          lastSearchInfo = info;
+          updateThinkingStatus();
+        },
+      });
       if (!aiMove) {
         syncUIWithGame(game.getSnapshot());
         return;
@@ -357,7 +424,24 @@ function createGameStore(): GameStore {
   function setDifficultyChoice(level: number): void {
     const clamped = Math.max(1, Math.min(6, Number(level) || 3));
     settings.difficulty = clamped;
+    setDifficulty(clamped);
     if (game) game.setDifficulty(clamped);
+  }
+
+  function setUncapped(on: boolean): void {
+    settings.uncapped = Boolean(on);
+    persistUncapped(settings.uncapped);
+    if (game) game.setUncapped(settings.uncapped);
+  }
+
+  function setThinkTimeSec(sec: number): void {
+    const clamped = Math.max(
+      MIN_THINK_TIME_SEC,
+      Math.min(MAX_THINK_TIME_SEC, Math.round(Number(sec) || 10)),
+    );
+    settings.thinkTimeSec = clamped;
+    persistThinkTimeMs(clamped * 1000);
+    if (game) game.setThinkTimeMs(clamped * 1000);
   }
 
   function setBoardSizeSlider(v: number): void {
@@ -396,6 +480,8 @@ function createGameStore(): GameStore {
     undoLastMove,
     setColor,
     setDifficultyChoice,
+    setUncapped,
+    setThinkTimeSec,
     setBoardSizeSlider,
     getDisclaimerAccepted,
   };

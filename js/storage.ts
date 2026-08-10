@@ -8,6 +8,8 @@
  *   sdc-disclaimer-accepted  "true" when user has accepted the disclaimer
  *   sdc-theme                "system" | "light" | "dark"
  *   sdc-difficulty           "1" … "6"
+ *   sdc-uncapped             "true" when uncapped strength is on
+ *   sdc-think-time-ms        per-move thinking time in ms (uncapped mode)
  *   sdc-game                 JSON string of GameState.serialize()
  *   sdc-board-size           "0" … "100" desktop board width slider
  *   sdc-color                "white" | "black" | "random"
@@ -17,10 +19,17 @@ const KEYS = {
   DISCLAIMER: "sdc-disclaimer-accepted",
   THEME: "sdc-theme",
   DIFFICULTY: "sdc-difficulty",
+  UNCAPPED: "sdc-uncapped",
+  THINK_TIME_MS: "sdc-think-time-ms",
   GAME: "sdc-game",
   BOARD_SIZE: "sdc-board-size",
   COLOR: "sdc-color",
 } as const;
+
+/** Default uncapped think time (matches level-6 human-play default). */
+export const DEFAULT_THINK_TIME_MS = 10_000;
+export const MIN_THINK_TIME_MS = 1_000;
+export const MAX_THINK_TIME_MS = 60_000;
 
 export type ThemePreference = "system" | "light" | "dark";
 export type ColorChoice = "white" | "black" | "random";
@@ -109,6 +118,34 @@ export function getDifficulty(): number | null {
 export function setDifficulty(level: number): void {
   const clamped = Math.max(1, Math.min(6, Number(level) || 6));
   write(KEYS.DIFFICULTY, String(clamped));
+}
+
+// ── Uncapped strength / think time ───────────────────────────────────────────
+
+export function getUncapped(): boolean {
+  return read(KEYS.UNCAPPED) === "true";
+}
+
+export function setUncapped(on: boolean): void {
+  write(KEYS.UNCAPPED, on ? "true" : "false");
+}
+
+/** Per-move think time in ms for uncapped mode, or null if unset / invalid. */
+export function getThinkTimeMs(): number | null {
+  const raw = read(KEYS.THINK_TIME_MS);
+  if (raw === null) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < MIN_THINK_TIME_MS || n > MAX_THINK_TIME_MS) return null;
+  return Math.round(n);
+}
+
+export function setThinkTimeMs(ms: number): void {
+  const n = Number(ms);
+  const clamped = Math.max(
+    MIN_THINK_TIME_MS,
+    Math.min(MAX_THINK_TIME_MS, Number.isFinite(n) ? Math.round(n) : DEFAULT_THINK_TIME_MS),
+  );
+  write(KEYS.THINK_TIME_MS, String(clamped));
 }
 
 // ── Game progress ─────────────────────────────────────────────────────────────
