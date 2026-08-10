@@ -1,0 +1,410 @@
+/**
+ * useGameStore — reactive orchestration for Spindrift Chess.
+ *
+ * Owns the framework-agnostic `Game` instance and exposes reactive state for
+ * the vd3 chrome (status, history, settings) plus imperative hooks into the
+ * `BoardView` island. Module-scope singleton shared by every component.
+ */
+import { reactive, ref, computed, type Ref, type ComputedRef } from "vue";
+import { Game, type ColorChoice, type GameSnapshot, type PromotionPiece } from "../../js/Game.js";
+import {
+  getDisclaimerAccepted,
+  getDifficulty,
+  setDifficulty,
+  getGame,
+  setGame,
+  clearGame,
+  getBoardSize,
+  setBoardSize,
+  getColorChoice,
+  setColorChoice,
+  type SerializedGame,
+} from "../../js/storage.js";
+import type { BoardView } from "../../js/ui/BoardView.js";
+
+const BOARD_SIZE_MIN_PX = 400;
+const BOARD_SIZE_MAX_PX = 800;
+/** First visit: max board width (slider 100 -> 800px). */
+const BOARD_SIZE_SLIDER_DEFAULT = 100;
+
+const boardSliderToMaxWidthPx = (slider: number): number => {
+  const s = Math.max(0, Math.min(100, Number(slider)));
+  return BOARD_SIZE_MIN_PX + ((BOARD_SIZE_MAX_PX - BOARD_SIZE_MIN_PX) * s) / 100;
+};
+
+const applyBoardMaxWidthCss = (slider: number): void => {
+  const px = Math.round(boardSliderToMaxWidthPx(slider));
+  document.documentElement.style.setProperty("--board-max-width", `${px}px`);
+};
+
+export interface StatusState {
+  text: string;
+  turn: string;
+  lastMove: string;
+  busy: boolean;
+}
+
+export interface SettingsState {
+  color: ColorChoice;
+  difficulty: number;
+}
+
+export interface GameEndPayload {
+  result: NonNullable<GameSnapshot["result"]>;
+  playerColor: GameSnapshot["playerColor"];
+}
+
+export interface GameStore {
+  status: StatusState;
+  history: Ref<string[]>;
+  settings: SettingsState;
+  boardSizeSlider: Ref<number>;
+  gameEndResult: Ref<GameEndPayload | null>;
+  canUndo: ComputedRef<boolean>;
+  attachBoard: (instance: BoardView) => void;
+  detachBoard: () => void;
+  restore: () => Promise<void>;
+  newGame: () => Promise<void>;
+  handleSquareSelected: (square: string) => void;
+  handlePromotionPicked: (piece: PromotionPiece) => void;
+  handlePromotionCancelled: () => void;
+  undoLastMove: () => void;
+  setColor: (color: ColorChoice) => void;
+  setDifficultyChoice: (level: number) => void;
+  setBoardSizeSlider: (v: number) => void;
+  getDisclaimerAccepted: typeof getDisclaimerAccepted;
+}
+
+function createGameStore(): GameStore {
+  const status = reactive<StatusState>({
+    text: "Ready. Select settings and click 'New Game' to start.",
+    turn: "",
+    lastMove: "",
+    busy: false,
+  });
+  const history = ref<string[]>([]);
+
+  const settings = reactive<SettingsState>({
+    color: getColorChoice() || "random",
+    difficulty: getDifficulty() ?? 3,
+  });
+
+  const boardSizeSlider = ref(getBoardSize() ?? BOARD_SIZE_SLIDER_DEFAULT);
+
+  const gameEndResult = ref<GameEndPayload | null>(null);
+
+  let game: Game | null = null;
+  let boardView: BoardView | null = null;
+  let isProcessingMove = false;
+  let gameSaveThrottle: ReturnType<typeof setTimeout> | null = null;
+  let pendingPromotion: { from: string; to: string } | null = null;
+  let previousGameOver = false;
+
+  function attachBoard(instance: BoardView): void {
+    boardView = instance;
+    if (game) renderCurrentBoard();
+  }
+
+  function detachBoard(): void {
+    boardView = null;
+  }
+
+  function renderCurrentBoard(): void {
+    if (!game || !boardView) return;
+    const snapshot = game.getSnapshot();
+    boardView.render(game.getBoard(), {
+      perspective: game.getPlayerColor(),
+      selected: null,
+      legalMoves: [],
+      lastMove: snapshot.lastMove,
+      checkedKingSquare: game.getCheckedKingSquare(),
+    });
+  }
+
+  function syncUIWithGame(snapshot: GameSnapshot): void {
+    if (!snapshot) return;
+
+    status.text = snapshot.statusText || "";
+    status.turn = snapshot.turnText || "";
+    status.lastMove = snapshot.lastMoveText || "";
+    history.value = (snapshot.history || []).slice();
+
+    if (game && !game.isGameOver()) {
+      if (gameSaveThrottle) clearTimeout(gameSaveThrottle);
+      gameSaveThrottle = setTimeout(() => {
+        try {
+          setGame(game!.getGameState() as unknown as SerializedGame);
+        } catch {
+          /* non-critical */
+        }
+        gameSaveThrottle = null;
+      }, 500);
+    }
+
+    const isGameOver = snapshot.gameOver || false;
+    if (isGameOver && !previousGameOver && snapshot.result) {
+      clearGame();
+      gameEndResult.value = {
+        result: snapshot.result,
+        playerColor: snapshot.playerColor,
+      };
+    }
+    previousGameOver = isGameOver;
+  }
+
+  function syncBusyState(isBusy: boolean): void {
+    if (isBusy) {
+      status.busy = true;
+      status.text = "Computer is thinking...";
+    } else {
+      status.busy = false;
+      if (game) {
+        syncUIWithGame(game.getSnapshot());
+      }
+    }
+  }
+
+  async function initializeGame(): Promise<void> {
+    clearGame();
+    setDifficulty(settings.difficulty);
+
+    gameEndResult.value = null;
+    previousGameOver = false;
+
+    const playerColor = settings.color;
+    const { difficulty } = settings;
+
+    try {
+      game = new Game({
+        playerColor,
+        difficulty,
+        onUpdate: syncUIWithGame,
+      });
+
+      const snapshot = game.getSnapshot();
+      renderCurrentBoard();
+      syncUIWithGame(snapshot);
+
+      if (game.getCurrentTurn() !== game.getPlayerColor() && !game.isGameOver()) {
+        requestAnimationFrame(() => {
+          if (!game || game.isGameOver()) return;
+          if (game.getCurrentTurn() !== game.getPlayerColor()) void triggerAIMove();
+        });
+      }
+    } catch (error) {
+      console.error("Game initialization error:", error);
+      status.text = "Failed to initialize game. Please refresh and try again.";
+    }
+  }
+
+  async function restoreGame(savedState: SerializedGame): Promise<void> {
+    previousGameOver = false;
+    gameEndResult.value = null;
+
+    const savedDifficulty = getDifficulty();
+
+    try {
+      game = Game.fromSaved(savedState as Parameters<typeof Game.fromSaved>[0], {
+        difficulty: savedDifficulty ?? 3,
+        onUpdate: syncUIWithGame,
+      });
+
+      const snapshot = game.getSnapshot();
+      renderCurrentBoard();
+      syncUIWithGame(snapshot);
+
+      if (!game.isGameOver() && game.getCurrentTurn() !== game.getPlayerColor()) {
+        requestAnimationFrame(() => {
+          if (!game || game.isGameOver()) return;
+          if (game.getCurrentTurn() !== game.getPlayerColor()) void triggerAIMove();
+        });
+      }
+    } catch (error) {
+      console.error("Game restore error:", error);
+      clearGame();
+      status.text = "Ready. Select settings and click 'New Game' to start.";
+    }
+  }
+
+  async function newGame(): Promise<void> {
+    if (isProcessingMove) return;
+    await initializeGame();
+  }
+
+  function handleSquareSelected(square: string): void {
+    if (isProcessingMove) return;
+    if (!game) return;
+    if (game.getCurrentTurn() !== game.getPlayerColor()) return;
+    if (game.isGameOver()) return;
+
+    const selectedFrom = game.state.selectedSquare;
+    if (selectedFrom && game.isPromotionMove(selectedFrom, square)) {
+      pendingPromotion = { from: selectedFrom, to: square };
+      boardView?.showPromotionPicker(square, game.getPlayerColor());
+      return;
+    }
+
+    const result = game.handlePlayerSquareSelection(square, "Q");
+    if (!result.changed) {
+      boardView?.updateHighlights({
+        selected: result.selected,
+        legalMoves: result.legalTargets,
+        lastMove: result.lastMove,
+        checkedKingSquare: game.getCheckedKingSquare(),
+      });
+      return;
+    }
+    completePlayerMove();
+  }
+
+  function handlePromotionPicked(piece: PromotionPiece): void {
+    if (!game || !pendingPromotion) return;
+    const { to } = pendingPromotion;
+    pendingPromotion = null;
+    const result = game.handlePlayerSquareSelection(to, piece);
+    if (!result.changed) return;
+    completePlayerMove();
+  }
+
+  function handlePromotionCancelled(): void {
+    pendingPromotion = null;
+  }
+
+  function completePlayerMove(): void {
+    if (!game) return;
+    const snapshot = game.getSnapshot();
+    syncUIWithGame(snapshot);
+    if (boardView) {
+      boardView.render(game.getBoard(), {
+        perspective: game.getPlayerColor(),
+        selected: null,
+        legalMoves: [],
+        lastMove: snapshot.lastMove,
+        checkedKingSquare: game.getCheckedKingSquare(),
+      });
+    }
+    if (!game.isGameOver()) {
+      requestAnimationFrame(() => {
+        if (!game || game.isGameOver()) return;
+        if (game.getCurrentTurn() !== game.getPlayerColor()) void triggerAIMove();
+      });
+    }
+  }
+
+  async function triggerAIMove(): Promise<void> {
+    if (!game || game.isGameOver()) return;
+    if (game.getCurrentTurn() === game.getPlayerColor()) return;
+
+    isProcessingMove = true;
+    syncBusyState(true);
+    try {
+      const aiMove = await game.computeAIMove();
+      if (!aiMove) {
+        syncUIWithGame(game.getSnapshot());
+        return;
+      }
+      game.applyAIMove(aiMove);
+      const snapshot = game.getSnapshot();
+      syncUIWithGame(snapshot);
+      if (boardView) {
+        boardView.render(game.getBoard(), {
+          perspective: game.getPlayerColor(),
+          selected: null,
+          legalMoves: [],
+          lastMove: snapshot.lastMove,
+          checkedKingSquare: game.getCheckedKingSquare(),
+        });
+      }
+    } catch (error) {
+      console.error("AI move error:", error);
+      status.text = "An error occurred while computing AI move.";
+    } finally {
+      isProcessingMove = false;
+      syncBusyState(false);
+    }
+  }
+
+  /**
+   * Reactive availability for the Undo button. `game` is non-reactive, so the
+   * computed reads `history`/`gameEndResult` to re-evaluate whenever the
+   * position, busy flag, or end-modal changes.
+   */
+  const canUndo = computed(() => {
+    const busy = status.busy;
+    void history.value;
+    void gameEndResult.value;
+    if (busy || !game) return false;
+    return game.canUndo();
+  });
+
+  function undoLastMove(): void {
+    if (!game || !canUndo.value) return;
+    pendingPromotion = null;
+    const undone = game.undoToPlayerTurn();
+    if (!undone) return;
+    gameEndResult.value = null;
+    previousGameOver = false;
+    renderCurrentBoard();
+    syncUIWithGame(game.getSnapshot());
+  }
+
+  function setColor(color: ColorChoice): void {
+    if (!["white", "black", "random"].includes(color)) return;
+    settings.color = color;
+    setColorChoice(color);
+  }
+
+  function setDifficultyChoice(level: number): void {
+    const clamped = Math.max(1, Math.min(6, Number(level) || 3));
+    settings.difficulty = clamped;
+    if (game) game.setDifficulty(clamped);
+  }
+
+  function setBoardSizeSlider(v: number): void {
+    const value = Math.max(0, Math.min(100, Number(v) || 0));
+    boardSizeSlider.value = value;
+    applyBoardMaxWidthCss(value);
+    setBoardSize(value);
+  }
+
+  async function restore(): Promise<void> {
+    applyBoardMaxWidthCss(boardSizeSlider.value);
+    if (getBoardSize() === null) setBoardSize(boardSizeSlider.value);
+
+    const savedGame = getGame();
+    if (savedGame) {
+      await restoreGame(savedGame);
+    } else {
+      status.text = "Ready. Select settings and click 'New Game' to start.";
+    }
+  }
+
+  return {
+    status,
+    history,
+    settings,
+    boardSizeSlider,
+    gameEndResult,
+    canUndo,
+    attachBoard,
+    detachBoard,
+    restore,
+    newGame,
+    handleSquareSelected,
+    handlePromotionPicked,
+    handlePromotionCancelled,
+    undoLastMove,
+    setColor,
+    setDifficultyChoice,
+    setBoardSizeSlider,
+    getDisclaimerAccepted,
+  };
+}
+
+let store: GameStore | null = null;
+
+/** Shared singleton game store. */
+export function useGameStore(): GameStore {
+  if (!store) store = createGameStore();
+  return store;
+}

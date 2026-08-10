@@ -1,0 +1,87 @@
+{
+  "name": "spindrift-chess",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A pure client-side chess game: human vs Spindrift Engine. Vue 3 + Vanduo vd3, fully TypeScript.",
+  "type": "module",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "typecheck": "vue-tsc -b --pretty false",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm run test:unit && pnpm run test:e2e",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:quick": "playwright test --grep-invert 'Full Game Tests'",
+    "test:full-game": "playwright test --grep 'Full Game Tests'",
+    "test:baseline": "vitest run tests/unit/engine/SpindriftBaseline.spec.ts",
+    "test:selfplay": "tsx tests/matches/selfplay.ts",
+    "test:perft": "vitest run tests/unit/engine/perft.spec.ts",
+    "verify": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test:coverage && pnpm run test:baseline && pnpm run test:selfplay && pnpm run test:e2e:quick",
+    "test:all": "pnpm run verify"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nostromo-618/spindrift-chess.git"
+  },
+  "keywords": [
+    "chess",
+    "browser",
+    "vue",
+    "vue3",
+    "vanduo",
+    "typescript",
+    "ai",
+    "game"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Nostromo-618/spindrift-chess/issues"
+  },
+  "homepage": "https://github.com/Nostromo-618/spindrift-chess#readme",
+  "dependencies": {
+    "@vanduo-oss/vd3": "^1.2.1",
+    "vue": "^3.5.41"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^24.10.1",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/eslint-config-typescript": "^14.6.0",
+    "@vue/test-utils": "^2.4.6",
+    "eslint": "^9.39.1",
+    "eslint-plugin-vue": "^10.5.1",
+    "globals": "^16.5.0",
+    "happy-dom": "^20.11.2",
+    "jsdom": "^30.0.1",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vite": "^8.2.0",
+    "vitest": "^3.2.4",
+    "vue-tsc": "^3.1.2"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "packageManager": "pnpm@10.28.2",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

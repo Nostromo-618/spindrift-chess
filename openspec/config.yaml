@@ -1,0 +1,31 @@
+schema: spec-driven
+
+context: |
+  Spindrift Chess — a pure client-side chess game (Vue 3 + Vite + TypeScript,
+  UI on Vanduo vd3) that runs entirely in the browser for static hosting.
+
+  Product mode: human vs Spindrift Engine only (no multi-engine match UI).
+
+  Two-layer architecture:
+    - js/ : framework-agnostic TypeScript. js/engine/ is the dependency-free
+      chess engine (AI.ts = search, Evaluator.ts = static eval, Rules.ts = move
+      generation, Board.ts, Move.ts, GameState.ts, fen.ts, uciMatch.ts). The
+      Spindrift Engine runs in a Web Worker (js/ai.worker.ts).
+      js/engineAdapter.ts is the single-engine boundary.
+    - src/ : Vue 3 UI. src/composables/useGameStore.ts is the singleton bridge.
+
+  Engine difficulty: levels 1-6. Levels 1-3 must stay CPU-light (browser game,
+  battery/fan friendly). Levels 4-6 may use real CPU within a per-move time
+  budget; level 6 is meant to be maximally strong.
+
+  Testing: Vitest for unit/engine/perft/baseline; Playwright for e2e; Node
+  self-play harness (Spindrift vs Spindrift at every level) is a required
+  quality gate (not a product feature).
+
+  Conventions: strict TypeScript, ES modules, conventional commit messages.
+
+rules:
+  proposal:
+    - Keep proposals focused; include a Non-goals section.
+  tasks:
+    - Group tasks by implementation phase; each task independently verifiable.

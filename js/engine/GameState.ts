@@ -1,0 +1,886 @@
+/**
+ * GameState.ts
+ *
+ * Single source of truth for chess game state.
+ * Responsibilities:
+ * - Track:
+ *   - bAt(board, 64)
+ *   - activeColor ("white"|"black")
+ *   - castlingRights
+ *   - enPassantTarget
+ *   - halfmoveClock, fullmoveNumber
+ *   - playerColor (human side)
+ *   - moveHistory (long algebraic strings, e.g. e2-e4; legacy saves may contain SAN)
+ *   - repetitionMap for threefold repetition
+ * - Apply moves (including:
+ *   - promotions
+ *   - castling rook movement
+ *   - en passant captures
+ *   - castling rights updates
+ *   - 50-move rule)
+ * - Provide legal moves via Rules.generateLegalMoves
+ * - Provide selection helper used by Game for UI click flow
+ * - Compute detailed status text with check/checkmate/stalemate/draws
+ */
+
+import {
+  createStartingBoard,
+  algebraicToIndex,
+  indexToAlgebraic,
+  getColorOf,
+  oppositeColor,
+  cloneBoard,
+  boardToMap,
+} from "./Board.js";
+import { generateLegalMoves, analyzePosition } from "./Rules.js";
+import type {
+  Board,
+  BoardSquare,
+  CastlingRights,
+  Color,
+  FileRank,
+  GameResult,
+  GameSnapshot,
+  LastMoveSquares,
+  Move,
+  Piece,
+  PromotionPiece,
+  ReversibleSnapshot,
+  RulesState,
+  SelectionResult,
+  Square,
+} from "./types.js";
+
+/** Board cell read that collapses undefined (noUncheckedIndexedAccess). */
+function bAt(board: Board, i: number): BoardSquare {
+  return board[i] ?? null;
+}
+
+/**
+ * Long algebraic history entry: from-to squares, optional =PROMOTION
+ * (e.g. "e2-e4", "e7-e8=Q"). Castling is the king's from/to (e.g. "e1-g1").
+ * Legacy saves may hold SAN instead — those fail this regex.
+ */
+const LONG_ALG_RE = /^([a-h][1-8])-([a-h][1-8])(?:=([QRBN]))?$/;
+
+/** Loose serialized payload accepted by GameState constructor / hydrate. */
+export interface GameStateData {
+  board?: Board | Record<string, Piece | null>;
+  initialBoard?: Board | null;
+  activeColor?: Color;
+  playerColor?: Color;
+  castlingRights?: CastlingRights;
+  enPassantTarget?: Square | null;
+  halfmoveClock?: number;
+  fullmoveNumber?: number;
+  moveHistory?: string[];
+  result?: GameResult | null;
+  lastMove?: LastMoveSquares | null;
+  repetitionMap?: Map<string, number> | [string, number][] | Record<string, number>;
+  reversibleHistory?: ReversibleSnapshot[];
+}
+
+/**
+ * Match a long algebraic history entry against the legal moves of a position.
+ */
+function matchLongAlgebraic(entry: string, legalMoves: Move[]): Move | null {
+  const m = LONG_ALG_RE.exec(entry);
+  if (!m) return null;
+  const [, from, to, promotion] = m;
+  return (
+    legalMoves.find(
+      (move) =>
+        move.from === from &&
+        move.to === to &&
+        (move.promotion || undefined) === (promotion || undefined),
+    ) || null
+  );
+}
+
+export class GameState {
+  board!: Board;
+  initialBoard!: Board | null;
+  activeColor!: Color;
+  playerColor!: Color;
+  castlingRights!: CastlingRights;
+  enPassantTarget!: Square | null;
+  halfmoveClock!: number;
+  fullmoveNumber!: number;
+  moveHistory!: string[];
+  result!: GameResult | null;
+  lastMove!: LastMoveSquares | null;
+  lastMoveText?: string | null;
+  statusText?: string;
+  repetitionMap!: Map<string, number>;
+  selectedSquare!: Square | null;
+  cachedLegalTargets!: Square[];
+  reversibleHistory!: ReversibleSnapshot[];
+
+  /**
+   * Create starting state with standard position.
+   */
+  static createStarting(playerColor: Color): GameState {
+    const state = new GameState();
+    state.board = createStartingBoard();
+    state.initialBoard = state.board.slice();
+    state.activeColor = "white";
+    state.playerColor = playerColor;
+    state.castlingRights = {
+      white: { kingSide: true, queenSide: true },
+      black: { kingSide: true, queenSide: true },
+    };
+    state.enPassantTarget = null;
+    state.halfmoveClock = 0;
+    state.fullmoveNumber = 1;
+    state.moveHistory = [];
+    state.result = null;
+    state.lastMove = null;
+    state.repetitionMap = new Map();
+    state.reversibleHistory = [];
+    state.recordRepetitionKey();
+    state.updateStatusText();
+    return state;
+  }
+
+  constructor(data: GameStateData | null = null) {
+    if (data) {
+      this.board = data.board
+        ? Array.isArray(data.board)
+          ? data.board
+          : (Object.values(data.board) as Board)
+        : new Array(64).fill(null);
+      // Board the game started from (undo replay base). Custom positions with
+      // an empty history are their own base; saves with a history but no
+      // recorded base predate this field and started from the standard board.
+      const historyLen = Array.isArray(data.moveHistory) ? data.moveHistory.length : 0;
+      this.initialBoard = Array.isArray(data.initialBoard)
+        ? data.initialBoard.slice()
+        : historyLen === 0 && data.board
+          ? this.board.slice()
+          : createStartingBoard();
+      this.activeColor = data.activeColor || "white";
+      this.playerColor = data.playerColor || "white";
+      this.castlingRights = data.castlingRights || {
+        white: { kingSide: true, queenSide: true },
+        black: { kingSide: true, queenSide: true },
+      };
+      this.enPassantTarget = data.enPassantTarget || null;
+      this.halfmoveClock = data.halfmoveClock || 0;
+      this.fullmoveNumber = data.fullmoveNumber || 1;
+      this.moveHistory = data.moveHistory || [];
+      this.result = data.result || null;
+      this.lastMove = data.lastMove || null;
+
+      this.repetitionMap = new Map();
+      if (data.repetitionMap) {
+        if (Array.isArray(data.repetitionMap)) {
+          data.repetitionMap.forEach(([k, v]) => this.repetitionMap.set(k, v));
+        } else {
+          Object.entries(data.repetitionMap).forEach(([k, v]) => this.repetitionMap.set(k, v));
+        }
+      }
+
+      this.selectedSquare = null;
+      this.cachedLegalTargets = [];
+      // Positions since the last irreversible move (for repetition-aware search).
+      this.reversibleHistory = Array.isArray(data.reversibleHistory) ? data.reversibleHistory : [];
+    } else {
+      this.board = new Array(64).fill(null);
+      this.initialBoard = null;
+      this.activeColor = "white";
+      this.playerColor = "white";
+      this.castlingRights = {
+        white: { kingSide: true, queenSide: true },
+        black: { kingSide: true, queenSide: true },
+      };
+      this.enPassantTarget = null;
+      this.halfmoveClock = 0;
+      this.fullmoveNumber = 1;
+      this.moveHistory = [];
+      this.result = null;
+      this.lastMove = null;
+      this.repetitionMap = new Map();
+      this.selectedSquare = null;
+      this.cachedLegalTargets = [];
+      // Positions since the last irreversible move (for repetition-aware search).
+      this.reversibleHistory = [];
+    }
+  }
+
+  /**
+   * Serialize state for worker/API transport
+   */
+  serialize(): GameStateData & {
+    repetitionMap: [string, number][];
+  } {
+    return {
+      board: this.board,
+      initialBoard: this.initialBoard,
+      activeColor: this.activeColor,
+      playerColor: this.playerColor,
+      castlingRights: this.castlingRights,
+      enPassantTarget: this.enPassantTarget,
+      halfmoveClock: this.halfmoveClock,
+      fullmoveNumber: this.fullmoveNumber,
+      moveHistory: this.moveHistory,
+      result: this.result,
+      lastMove: this.lastMove,
+      repetitionMap: Array.from(this.repetitionMap.entries()),
+      reversibleHistory: this.reversibleHistory,
+    };
+  }
+
+  /**
+   * Returns a map representation of the board for UI.
+   */
+  getBoardMap(): Record<string, Piece | null> {
+    return boardToMap(this.board);
+  }
+
+  /**
+   * Get current snapshot for UI.
+   */
+  getSnapshot(): GameSnapshot {
+    return {
+      board: this.getBoardMap(),
+      activeColor: this.activeColor,
+      playerColor: this.playerColor,
+      gameOver: this.isGameOver(),
+      statusText: this.statusText || "",
+      turnText:
+        this.isGameOver() || !this.activeColor
+          ? ""
+          : this.activeColor === this.playerColor
+            ? "Your move"
+            : "Computer's move",
+      lastMoveText: this.lastMoveText || null,
+      lastMove: this.lastMove ? { from: this.lastMove.from, to: this.lastMove.to } : null,
+      history: this.moveHistory.slice(),
+      selectedSquare: this.selectedSquare,
+      legalTargets: this.cachedLegalTargets.slice(),
+      result: this.result ? { ...this.result } : null,
+    };
+  }
+
+  /**
+   * Whether game is in a terminal state.
+   */
+  isGameOver(): boolean {
+    return !!this.result && this.result.outcome !== "ongoing";
+  }
+
+  /**
+   * Handle single-square click selection logic for a given side.
+   * Encapsulates:
+   * - Selecting own piece to see legal moves.
+   * - Selecting target square to execute chosen move.
+   *
+   */
+  handleSelection(
+    square: Square,
+    side: Color,
+    promotionChoice: PromotionPiece = "Q",
+  ): SelectionResult {
+    if (this.isGameOver()) {
+      return { moved: false, selectedSquare: null, legalTargets: [] };
+    }
+    if (side !== this.activeColor) {
+      // Ignore clicks when it's not this side's turn.
+      return {
+        moved: false,
+        selectedSquare: this.selectedSquare,
+        legalTargets: this.cachedLegalTargets.slice(),
+      };
+    }
+
+    const piece = this.getPiece(square);
+    const pieceColor = getColorOf(piece);
+
+    // If clicking own piece, (re)select and compute its legal moves
+    if (piece && pieceColor === side) {
+      this.selectedSquare = square;
+      const allLegal = generateLegalMoves(this.asRulesState());
+      const targets = [...new Set(allLegal.filter((m) => m.from === square).map((m) => m.to))];
+      this.cachedLegalTargets = targets;
+      return {
+        moved: false,
+        selectedSquare: square,
+        legalTargets: targets,
+      };
+    }
+
+    // If a piece is selected and user clicks destination, try to move.
+    if (this.selectedSquare) {
+      const from = this.selectedSquare;
+      const to = square;
+      const allLegal = generateLegalMoves(this.asRulesState());
+      const candidates = allLegal.filter((m) => m.from === from && m.to === to);
+      const normalizedPromotion: PromotionPiece = (["Q", "R", "B", "N"] as const).includes(
+        promotionChoice,
+      )
+        ? promotionChoice
+        : "Q";
+      const move =
+        candidates.find((m) => m.promotion === normalizedPromotion) ||
+        candidates.find((m) => !m.promotion) ||
+        candidates[0];
+
+      if (move) {
+        this.applyMove(move);
+        this.selectedSquare = null;
+        this.cachedLegalTargets = [];
+        return {
+          moved: true,
+          selectedSquare: null,
+          legalTargets: [],
+        };
+      }
+
+      // If clicked another own piece, re-select handled above; reaching here means invalid -> clear selection.
+      this.selectedSquare = null;
+      this.cachedLegalTargets = [];
+      return {
+        moved: false,
+        selectedSquare: null,
+        legalTargets: [],
+      };
+    }
+
+    // No selection, click on empty or enemy: ignore.
+    return {
+      moved: false,
+      selectedSquare: this.selectedSquare,
+      legalTargets: this.cachedLegalTargets.slice(),
+    };
+  }
+
+  /**
+   * Apply a fully-legal move to this state.
+   * Responsible for all chess state transitions.
+   */
+  applyMove(move: Move): void {
+    if (this.isGameOver()) return;
+
+    // Snapshot the position BEFORE this move so a later revisit is a repetition.
+    const preSnapshot: ReversibleSnapshot = {
+      board: this.board.slice(),
+      activeColor: this.activeColor,
+      castlingRights: {
+        white: { ...this.castlingRights.white },
+        black: { ...this.castlingRights.black },
+      },
+      enPassantTarget: this.enPassantTarget,
+    };
+
+    const fromIndex = algebraicToIndex(move.from);
+    const toIndex = algebraicToIndex(move.to);
+    const movingPiece = bAt(this.board, fromIndex);
+    const color = getColorOf(movingPiece)!;
+    const enemy = oppositeColor(color);
+
+    // Half-move clock (reset on capture or pawn move)
+    const isPawn = movingPiece && movingPiece[1] === "P";
+    const isCapture = !!(move.captured || move.isEnPassant);
+    if (isPawn || isCapture) {
+      this.halfmoveClock = 0;
+    } else {
+      this.halfmoveClock += 1;
+    }
+
+    // Clear en passant target
+    this.enPassantTarget = null;
+
+    // Remove piece from origin
+    this.board[fromIndex] = null;
+
+    // En passant capture
+    if (move.isEnPassant) {
+      const dir = color === "white" ? -1 : 1;
+      const { file, rank } = this.indexFR(toIndex);
+      const capIndex = (rank + dir) * 8 + file;
+      this.board[capIndex] = null;
+    }
+
+    // Castling: move rook accordingly
+    if (move.isCastleKingSide || move.isCastleQueenSide) {
+      const rank = color === "white" ? 0 : 7;
+      if (move.isCastleKingSide) {
+        // King: e -> g, Rook: h -> f
+        const rookFrom = rank * 8 + 7;
+        const rookTo = rank * 8 + 5;
+        this.board[rookTo] = bAt(this.board, rookFrom);
+        this.board[rookFrom] = null;
+      } else {
+        // King: e -> c, Rook: a -> d
+        const rookFrom = rank * 8 + 0;
+        const rookTo = rank * 8 + 3;
+        this.board[rookTo] = bAt(this.board, rookFrom);
+        this.board[rookFrom] = null;
+      }
+    }
+
+    // Promotions
+    if (move.promotion) {
+      const prefix = color === "white" ? "w" : "b";
+      this.board[toIndex] = `${prefix}${move.promotion}` as Piece;
+    } else {
+      this.board[toIndex] = movingPiece;
+    }
+
+    // Set en passant target if pawn moved two squares
+    if (isPawn) {
+      const { rank: fromRank } = this.indexFR(fromIndex);
+      const { rank: toRank } = this.indexFR(toIndex);
+      if (Math.abs(toRank - fromRank) === 2) {
+        const epRank = (fromRank + toRank) / 2;
+        const { file } = this.indexFR(toIndex);
+        const epIndex = epRank * 8 + file;
+        this.enPassantTarget = indexToAlgebraic(epIndex);
+      }
+    }
+
+    // Update castling rights
+    this.updateCastlingRights(move, fromIndex, toIndex, movingPiece, color);
+
+    // Active color and fullmove number
+    this.activeColor = enemy;
+    if (color === "black") {
+      this.fullmoveNumber += 1;
+    }
+
+    // Record lastMove and history entry (long algebraic: from-to)
+    this.lastMove = { from: move.from, to: move.to };
+    const longAlg = this.formatLongAlgebraic(move);
+    this.moveHistory.push(longAlg);
+    this.lastMoveText = `${this.fullmoveNumber}. ${longAlg}`;
+
+    // Repetition tracking
+    this.recordRepetitionKey();
+
+    // Maintain the reversible-move window: an irreversible move (pawn move or
+    // capture) resets it because earlier positions can never recur.
+    if (isPawn || isCapture) {
+      this.reversibleHistory = [];
+    } else {
+      this.reversibleHistory.push(preSnapshot);
+    }
+
+    // Determine game result
+    this.updateResult();
+    this.updateStatusText();
+  }
+
+  /**
+   * Positions since the last irreversible move (excluding the current one), for
+   * repetition-aware engine search. Each is { board, activeColor,
+   * castlingRights, enPassantTarget }.
+   */
+  getReversibleHistory(): ReversibleSnapshot[] {
+    return this.reversibleHistory;
+  }
+
+  /**
+   * Whether every moveHistory entry is long algebraic (and therefore replayable
+   * for undo). Legacy saves may contain SAN, which we cannot reliably replay.
+   */
+  undoSupported(): boolean {
+    return this.moveHistory.every((entry) => LONG_ALG_RE.test(entry));
+  }
+
+  /**
+   * Take back the last half-move, restoring the exact prior position.
+   *
+   * Implemented by replaying the move history (minus the last entry) from the
+   * starting position through applyMove, so every derived structure
+   * (repetition map, reversible-history window, clocks, castling, en passant,
+   * result) is correct by construction. On any replay failure (e.g. legacy SAN
+   * history) this returns false and leaves the state untouched.
+   *
+   * @returns true if a ply was undone
+   */
+  undoOnePly(): boolean {
+    if (!this.moveHistory.length) return false;
+    // Upfront guard: the replay below validates every entry except the one
+    // being removed, so without this an unparseable last entry (legacy SAN)
+    // would be silently dropped instead of restored.
+    if (!this.undoSupported()) return false;
+    if (!this.initialBoard) return false;
+
+    const rebuilt = new GameState({
+      board: this.initialBoard.slice(),
+      activeColor: "white", // every game starts with white to move
+      playerColor: this.playerColor,
+      initialBoard: this.initialBoard,
+    });
+    rebuilt.recordRepetitionKey();
+    rebuilt.updateStatusText();
+
+    const plies = this.moveHistory.slice(0, -1);
+    for (const entry of plies) {
+      const move = matchLongAlgebraic(entry, generateLegalMoves(rebuilt.asRulesState()));
+      if (!move) return false; // unreplayable history — state untouched
+      rebuilt.applyMove(move);
+    }
+
+    this.board = rebuilt.board;
+    this.initialBoard = rebuilt.initialBoard;
+    this.activeColor = rebuilt.activeColor;
+    this.castlingRights = rebuilt.castlingRights;
+    this.enPassantTarget = rebuilt.enPassantTarget;
+    this.halfmoveClock = rebuilt.halfmoveClock;
+    this.fullmoveNumber = rebuilt.fullmoveNumber;
+    this.moveHistory = rebuilt.moveHistory;
+    this.result = rebuilt.result;
+    this.lastMove = rebuilt.lastMove;
+    this.lastMoveText = rebuilt.lastMoveText ?? null;
+    this.statusText = rebuilt.statusText ?? "";
+    this.repetitionMap = rebuilt.repetitionMap;
+    this.reversibleHistory = rebuilt.reversibleHistory;
+    this.selectedSquare = null;
+    this.cachedLegalTargets = [];
+    return true;
+  }
+
+  /**
+   * Internal: update castling rights based on move.
+   */
+  updateCastlingRights(
+    move: Move,
+    _fromIndex: number,
+    _toIndex: number,
+    movingPiece: Piece | null,
+    _color: Color | null,
+  ): void {
+    const { castlingRights, board } = this;
+    const fromSq = move.from;
+    const toSq = move.to;
+
+    // If king moves, lose both sides
+    if (movingPiece === "wK") {
+      castlingRights.white.kingSide = false;
+      castlingRights.white.queenSide = false;
+    }
+    if (movingPiece === "bK") {
+      castlingRights.black.kingSide = false;
+      castlingRights.black.queenSide = false;
+    }
+
+    // If rook moves or is captured from corners, adjust rights
+    if (fromSq === "h1" || toSq === "h1") {
+      castlingRights.white.kingSide = false;
+    }
+    if (fromSq === "a1" || toSq === "a1") {
+      castlingRights.white.queenSide = false;
+    }
+    if (fromSq === "h8" || toSq === "h8") {
+      castlingRights.black.kingSide = false;
+    }
+    if (fromSq === "a8" || toSq === "a8") {
+      castlingRights.black.queenSide = false;
+    }
+
+    // Ensure rights are consistent if rooks are missing.
+    if (bAt(board, algebraicToIndex("h1")) !== "wR") {
+      castlingRights.white.kingSide = false;
+    }
+    if (bAt(board, algebraicToIndex("a1")) !== "wR") {
+      castlingRights.white.queenSide = false;
+    }
+    if (bAt(board, algebraicToIndex("h8")) !== "bR") {
+      castlingRights.black.kingSide = false;
+    }
+    if (bAt(board, algebraicToIndex("a8")) !== "bR") {
+      castlingRights.black.queenSide = false;
+    }
+  }
+
+  /**
+   * Compute and store game result (checkmate, stalemate, draw).
+   * Uses full draw rules: stalemate, insufficient material,
+   * threefold repetition, fifty-move rule.
+   */
+  updateResult(): void {
+    if (this.result && this.result.outcome !== "ongoing") {
+      return;
+    }
+
+    const rulesState = this.asRulesState();
+    const { hasLegalMoves, isCheck } = analyzePosition(rulesState);
+
+    // Checkmate / stalemate
+    if (!hasLegalMoves) {
+      if (isCheck) {
+        this.result = {
+          outcome: "checkmate",
+          winner: oppositeColor(this.activeColor),
+          reason: "Checkmate",
+        };
+      } else {
+        this.result = {
+          outcome: "stalemate",
+          winner: null,
+          reason: "Stalemate",
+        };
+      }
+      return;
+    }
+
+    // 50-move rule
+    if (this.halfmoveClock >= 100) {
+      this.result = {
+        outcome: "draw",
+        winner: null,
+        reason: "50-move rule",
+      };
+      return;
+    }
+
+    // Threefold repetition
+    if (this.hasThreefoldRepetition()) {
+      this.result = {
+        outcome: "draw",
+        winner: null,
+        reason: "Threefold repetition",
+      };
+      return;
+    }
+
+    // Insufficient material
+    if (this.isInsufficientMaterial()) {
+      this.result = {
+        outcome: "draw",
+        winner: null,
+        reason: "Insufficient material",
+      };
+      return;
+    }
+
+    // Otherwise ongoing
+    this.result = { outcome: "ongoing" };
+  }
+
+  /**
+   * Update human-readable statusText based on result and position.
+   */
+  updateStatusText(): void {
+    if (!this.result || this.result.outcome === "ongoing") {
+      const colorText = this.activeColor === "white" ? "White" : "Black";
+      const perspective = this.activeColor === this.playerColor ? "Your move" : "Computer's move";
+      this.statusText = `${colorText} to move. ${perspective}.`;
+      return;
+    }
+
+    switch (this.result.outcome) {
+      case "checkmate": {
+        const winner = this.result.winner === "white" ? "White" : "Black";
+        this.statusText = `Checkmate. ${winner} wins.`;
+        break;
+      }
+      case "stalemate":
+        this.statusText = "Draw by stalemate.";
+        break;
+      case "draw":
+        this.statusText = `Draw: ${this.result.reason || "by agreement"}.`;
+        break;
+      default:
+        this.statusText = "";
+        break;
+    }
+  }
+
+  /**
+   * Build a compact key for repetition tracking based on:
+   * - piece placement
+   * - active color
+   * - castling rights
+   * - en passant file (if any)
+   */
+  recordRepetitionKey(): void {
+    const key = this.buildRepetitionKey();
+    const prev = this.repetitionMap.get(key) || 0;
+    this.repetitionMap.set(key, prev + 1);
+  }
+
+  buildRepetitionKey(): string {
+    const boardPart = this.board.join(",");
+    const active = this.activeColor;
+    const cr = this.castlingRights;
+    const crPart = [
+      cr.white.kingSide ? "K" : "",
+      cr.white.queenSide ? "Q" : "",
+      cr.black.kingSide ? "k" : "",
+      cr.black.queenSide ? "q" : "",
+    ].join("");
+    const ep = this.enPassantTarget || "-";
+    return `${boardPart}|${active}|${crPart}|${ep}`;
+  }
+
+  hasThreefoldRepetition(): boolean {
+    for (const count of this.repetitionMap.values()) {
+      if (count >= 3) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Basic insufficient material detection:
+   * - King vs King
+   * - King + bishop vs King
+   * - King + knight vs King
+   * - King + bishop vs King + bishop (same color complexes)
+   */
+  isInsufficientMaterial(): boolean {
+    const pieces: Piece[] = [];
+    for (const p of this.board) {
+      if (!p) continue;
+      if (p[1] === "K") continue;
+      pieces.push(p);
+    }
+
+    if (pieces.length === 0) return true; // K vs K
+
+    if (pieces.length === 1) {
+      const p = pieces[0]!;
+      if (p[1] === "B" || p[1] === "N") {
+        return true;
+      }
+    }
+
+    if (pieces.length === 2) {
+      const a = pieces[0]!;
+      const b = pieces[1]!;
+      if (a[1] === "B" && b[1] === "B") {
+        // Approximation: treat as insufficient (ignores opposite colors nuance).
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Helper: bAt(board, index) to (file,rank)
+   */
+  indexFR(index: number): FileRank {
+    const file = index % 8;
+    const rank = Math.floor(index / 8);
+    return { file, rank };
+  }
+
+  /**
+   * Get piece by algebraic square.
+   */
+  getPiece(sq: Square): Piece | null {
+    return bAt(this.board, algebraicToIndex(sq)) || null;
+  }
+
+  /**
+   * Produce a reduced state object for Rules module.
+   */
+  asRulesState(): RulesState {
+    return {
+      board: this.board,
+      activeColor: this.activeColor,
+      castlingRights: this.castlingRights,
+      enPassantTarget: this.enPassantTarget,
+    };
+  }
+
+  /**
+   * Long algebraic notation: from-to squares, optional =PROMOTION (e.g. e7-e8=Q).
+   */
+  formatLongAlgebraic(move: Move): string {
+    let s = `${move.from}-${move.to}`;
+    if (move.promotion) {
+      s += `=${move.promotion}`;
+    }
+    return s;
+  }
+
+  /**
+   * Simplified SAN-like notation for history display.
+   * Uses lightweight board copy instead of full state clone for check detection.
+   */
+  toSimpleSAN(move: Move, movingPiece: Piece, isCapture: boolean): string {
+    const pieceType = movingPiece[1];
+    const from = move.from;
+    const to = move.to;
+    let san = "";
+
+    if (move.isCastleKingSide) {
+      san = "O-O";
+    } else if (move.isCastleQueenSide) {
+      san = "O-O-O";
+    } else {
+      if (pieceType !== "P") {
+        san += pieceType;
+      } else if (isCapture) {
+        san += from[0];
+      }
+      if (isCapture) san += "x";
+      san += to;
+
+      if (move.promotion) {
+        san += `=${move.promotion}`;
+      }
+    }
+
+    // Lightweight check detection using board copy only
+    const { isCheck, hasLegalMoves } = this.detectCheckAfterMove(move);
+    if (isCheck && !hasLegalMoves) {
+      san += "#";
+    } else if (isCheck) {
+      san += "+";
+    }
+
+    return san;
+  }
+
+  /**
+   * Detect if a move gives check, using only a board copy.
+   * Avoids cloning the full GameState.
+   */
+  detectCheckAfterMove(move: Move): { isCheck: boolean; hasLegalMoves: boolean } {
+    const board = cloneBoard(this.board);
+    const fromIndex = algebraicToIndex(move.from);
+    const toIndex = algebraicToIndex(move.to);
+    const movingPiece = bAt(board, fromIndex);
+    const color = getColorOf(movingPiece)!;
+    const enemy = oppositeColor(color);
+
+    board[fromIndex] = null;
+
+    if (move.isEnPassant) {
+      const dir = color === "white" ? -1 : 1;
+      const { file, rank } = this.indexFR(toIndex);
+      board[(rank + dir) * 8 + file] = null;
+    }
+
+    if (move.isCastleKingSide || move.isCastleQueenSide) {
+      const rank = color === "white" ? 0 : 7;
+      if (move.isCastleKingSide) {
+        board[rank * 8 + 5] = bAt(board, rank * 8 + 7);
+        board[rank * 8 + 7] = null;
+      } else {
+        board[rank * 8 + 3] = bAt(board, rank * 8 + 0);
+        board[rank * 8 + 0] = null;
+      }
+    }
+
+    if (move.promotion) {
+      board[toIndex] = `${color === "white" ? "w" : "b"}${move.promotion}` as Piece;
+    } else {
+      board[toIndex] = movingPiece;
+    }
+
+    const tempState = {
+      board,
+      activeColor: enemy,
+      castlingRights: this.castlingRights,
+      enPassantTarget: this.enPassantTarget,
+    };
+
+    const { hasLegalMoves, isCheck } = analyzePosition(tempState);
+    return { isCheck, hasLegalMoves };
+  }
+}

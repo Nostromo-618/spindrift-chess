@@ -1,0 +1,44 @@
+.DS_Store
+
+# npm / Node.js
+node_modules/
+
+# Vite build output + cache
+dist/
+.vite/
+*.local
+
+# Playwright
+playwright-report/
+test-results/
+playwright/.cache/
+
+# Coverage output
+/coverage/
+
+# Snyk Security Extension - AI Rules (auto-generated)
+.github/instructions/snyk_rules.instructions.md
+
+# Snyk Security Extension - AI Rules (auto-generated)
+.agent/rules/snyk_rules.md
+
+# Snyk Security Extension - AI Rules (auto-generated)
+.cursor/rules/snyk_rules.mdc
+
+# Kilo Code
+.kilo/
+
+# Engine baseline snapshot (throwaway, for old-vs-new match measurement)
+.baseline/
+
+# Match harness result artifacts
+tests/matches/results/
+
+# VS Code
+.vscode/
+
+# Engine phase snapshots (throwaway, for phase-vs-phase comparison)
+.phase1/
+.prepvs/
+.nosee/
+coverage/
