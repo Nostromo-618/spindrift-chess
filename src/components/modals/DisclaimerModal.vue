@@ -12,6 +12,9 @@ import { useModals } from "../../composables/useModals";
 
 const { disclaimerOpen, closeDisclaimer } = useModals();
 
+/** Same brand mark as the navbar (`AppHeader`). */
+const BRAND_ICON = `${import.meta.env.BASE_URL}brand/spindrift-rook.svg`;
+
 function accept(): void {
   setDisclaimerAccepted();
   closeDisclaimer();
@@ -23,7 +26,14 @@ function accept(): void {
     <template #header>
       <div class="disclaimer-modal-heading">
         <span class="disclaimer-modal-icon">
-          <i class="ph-bold ph-strategy" aria-hidden="true"></i>
+          <img
+            class="disclaimer-modal-icon-img"
+            :src="BRAND_ICON"
+            width="56"
+            height="56"
+            alt=""
+            aria-hidden="true"
+          />
         </span>
         <h2 id="disclaimer-modal-title" class="disclaimer-modal-title">
           Welcome to Spindrift Chess

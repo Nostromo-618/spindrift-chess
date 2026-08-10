@@ -542,10 +542,23 @@
 }
 
 .disclaimer-modal-icon {
-  font-size: 3rem;
-  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.25rem;
+  height: 4.25rem;
+  border-radius: 50%;
+  /* Light plate so the amber navbar rook keeps contrast on the orange header. */
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   line-height: 1;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.2));
+}
+
+.disclaimer-modal-icon-img {
+  display: block;
+  width: 2.75rem;
+  height: 2.75rem;
+  object-fit: contain;
 }
 
 .disclaimer-modal-title {
