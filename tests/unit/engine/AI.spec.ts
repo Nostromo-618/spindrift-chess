@@ -207,30 +207,34 @@ describe("AI - Uncapped search", () => {
   ];
 
   it("deepens past the level-6 depth cap when uncapped", async () => {
+    // Production level-6 cap stays high; prove uncapped ignores it with a
+    // temporary low ceiling so CI hosts don't need to reach depth 22 in wall time.
+    expect(new AI().depthForLevel[6]).toBe(22);
+
+    const artificialCap = 4;
     const cappedAI = new AI();
+    cappedAI.depthForLevel[6] = artificialCap;
     await cappedAI.findBestMove(buildState(sparse), {
       level: 6,
       forColor: "white",
-      timeout: 2500,
+      timeout: 2000,
     });
     const cappedDepth = cappedAI.getLastSearchInfo().depthCompleted;
 
-    // Sparse endgames deepen slowly; give uncapped enough wall time to finish
-    // an iteration past the level-6 depth cap (22) on CI and laptop CPUs.
     const uncappedAI = new AI();
+    uncappedAI.depthForLevel[6] = artificialCap;
     await uncappedAI.findBestMove(buildState(sparse), {
       level: 6,
       forColor: "white",
-      timeout: 10_000,
+      timeout: 2000,
       uncapped: true,
     });
     const uncappedDepth = uncappedAI.getLastSearchInfo().depthCompleted;
 
-    expect(cappedDepth).toBeLessThanOrEqual(22);
-    expect(uncappedDepth).toBeGreaterThan(cappedDepth);
-    expect(uncappedDepth).toBeGreaterThanOrEqual(22);
+    expect(cappedDepth).toBeLessThanOrEqual(artificialCap);
+    expect(uncappedDepth).toBeGreaterThan(artificialCap);
     expect(uncappedDepth).toBeLessThanOrEqual(56);
-  }, 30_000);
+  }, 15_000);
 
   it("is deterministic on a forcing promotion", async () => {
     const run = async () => {
