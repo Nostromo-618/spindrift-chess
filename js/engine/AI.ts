@@ -899,6 +899,21 @@ const EVAL_CACHE_MASK = 65535n;
  */
 const UNCAPPED_MAX_DEPTH = 56;
 
+/**
+ * Absolute recursion ceiling for main search (and quiescence via shared ply).
+ * Check extensions may increase remaining depth, but must not grow the call
+ * stack past this ply — without it, a continuous-check line can recurse until
+ * `RangeError: Maximum call stack size exceeded`.
+ */
+export const MAX_PLY = 128;
+
+/**
+ * Additional quiescence-only depth budget counted from the first Q node.
+ * Caps long capture / check-evasion chains even when main-search ply is still
+ * moderate.
+ */
+export const MAX_QPLY = 32;
+
 /** Minimum pieces (non-pawns) before disabling null move pruning */
 const ENDGAME_PIECE_THRESHOLD = 7;
 
@@ -942,6 +957,10 @@ export interface SearchInfo {
   depthCompleted: number;
   bestScore: number | null;
   timedOut: boolean;
+  /** Times main-search hit MAX_PLY (should be 0 in normal games). */
+  plyCeilingHits: number;
+  /** Times quiescence hit MAX_PLY or MAX_QPLY (should be 0 in normal games). */
+  qCeilingHits: number;
 }
 
 export interface FindBestMoveOptions {
@@ -1056,6 +1075,8 @@ export class AI {
       depthCompleted: 0,
       bestScore: null,
       timedOut: false,
+      plyCeilingHits: 0,
+      qCeilingHits: 0,
     };
   }
 
@@ -1694,6 +1715,13 @@ export class AI {
     const originalAlpha = alpha;
     const originalBeta = beta;
 
+    // Hard stack ceiling: check extensions may keep `depth > 0` forever along a
+    // continuous-check line; this ply guard guarantees termination.
+    if (ply >= MAX_PLY) {
+      this.lastSearchInfo.plyCeilingHits += 1;
+      return evaluate(state, rootColor);
+    }
+
     // Draw detection (never at the root): repetition and the fifty-move rule, so
     // the engine won't shuffle a won position into a draw or misjudge a drawn one.
     if (ply > 0) {
@@ -1723,6 +1751,7 @@ export class AI {
     }
 
     const inCheck = isInCheck(state);
+    // Check extension: keep existing strength policy; MAX_PLY bounds the stack.
     if (inCheck && depth > 0) {
       depth += 1;
     }
@@ -1741,6 +1770,7 @@ export class AI {
           startTime,
           level,
           ply,
+          0,
         );
       }
       return evaluate(state, rootColor);
@@ -2123,6 +2153,7 @@ export class AI {
     startTime: number | undefined,
     level: number,
     ply = 0,
+    qDepth = 0,
   ): number | null {
     if (this.isTimeUp(timeout, startTime)) {
       this.lastSearchInfo.timedOut = true;
@@ -2131,6 +2162,23 @@ export class AI {
 
     this.lastSearchInfo.qNodes += 1;
     const maximizing = state.activeColor === rootColor;
+
+    // Path / game-history repetition is a draw in Q too (perpetual check lines).
+    if (ply > 0 && this.isDrawByRepetition(state)) return 0;
+
+    const inCheck = isInCheck(state);
+
+    // Absolute ply + quiescence-depth ceilings — stand pat (or mate if no evasion).
+    if (ply >= MAX_PLY || qDepth >= MAX_QPLY) {
+      this.lastSearchInfo.qCeilingHits += 1;
+      if (inCheck) {
+        const evasions = generateLegalMoves(state);
+        if (evasions.length === 0) {
+          return state.activeColor === rootColor ? -(MATE - ply) : MATE - ply;
+        }
+      }
+      return standPat;
+    }
 
     // Quiescence TT (levels 4-6): probe and store with depth 0. Any deeper
     // main-search entry also satisfies a depth-0 probe, and depth-0 stores
@@ -2142,8 +2190,6 @@ export class AI {
       const ttScore = this.probeTable(ttKey, 0, alpha, beta, ply);
       if (ttScore !== null) return ttScore;
     }
-
-    const inCheck = isInCheck(state);
 
     let value;
     let noisyMoves;
@@ -2209,6 +2255,7 @@ export class AI {
         startTime,
         level,
         ply + 1,
+        qDepth + 1,
       );
       state.undoMove();
 

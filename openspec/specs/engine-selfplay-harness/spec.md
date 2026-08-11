@@ -45,3 +45,17 @@ so a match cannot run forever.
 
 - **WHEN** a game reaches the configured ply cap without a terminal chess result
 - **THEN** the harness adjudicates the game rather than continuing indefinitely
+
+### Requirement: Local stress preset
+
+Local verification MAY raise games-per-level and movetime above CI defaults via
+`SPINDRIFT_SELFPLAY_GAMES` and `SPINDRIFT_SELFPLAY_MOVETIME` (for example 8
+games and 1500ms) to stress level-6 search after engine changes. CI defaults
+SHALL remain short enough for the required quality gate.
+
+#### Scenario: Stress env overrides CI defaults
+
+- **WHEN** `SPINDRIFT_SELFPLAY_GAMES` and `SPINDRIFT_SELFPLAY_MOVETIME` are set
+  above the harness defaults
+- **THEN** the harness uses those values for the local run without changing
+  the default CI configuration
