@@ -74,6 +74,13 @@ export interface TranslationMap {
     draw: (opts: { reason: string }) => string;
     turnStatus: (opts: { color: string; perspective: string }) => string;
   };
+  /** Maps engine-emitted English draw reason strings to locale text. */
+  drawReason: {
+    fiftyMove: string;
+    threefold: string;
+    insufficientMaterial: string;
+    agreement: string;
+  };
   history: {
     label: string;
     title: string;

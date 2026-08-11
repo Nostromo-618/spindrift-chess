@@ -29,7 +29,7 @@ import {
 } from "../../js/storage.js";
 import type { SearchInfo } from "../../js/engineAdapter.js";
 import type { BoardView } from "../../js/ui/BoardView.js";
-import { getT } from "./useI18n";
+import { getT, translateDrawReason } from "./useI18n";
 
 const MIN_THINK_TIME_SEC = Math.round(MIN_THINK_TIME_MS / 1000);
 const MAX_THINK_TIME_SEC = Math.round(MAX_THINK_TIME_MS / 1000);
@@ -192,7 +192,9 @@ function createGameStore(): GameStore {
           status.text = t.status.stalemate;
           break;
         case "draw":
-          status.text = t.status.draw({ reason: snapshot.result.reason || "by agreement" });
+          status.text = t.status.draw({
+            reason: translateDrawReason(snapshot.result.reason),
+          });
           break;
         default:
           status.text = "";

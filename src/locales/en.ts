@@ -83,6 +83,12 @@ export const EN: TranslationMap = {
     draw: ({ reason }) => `Draw: ${reason}.`,
     turnStatus: ({ color, perspective }) => `${color} to move. ${perspective}.`,
   },
+  drawReason: {
+    fiftyMove: "50-move rule",
+    threefold: "threefold repetition",
+    insufficientMaterial: "insufficient material",
+    agreement: "by agreement",
+  },
   history: {
     label: "Move history",
     title: "Move History",

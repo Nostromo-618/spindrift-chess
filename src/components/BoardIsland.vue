@@ -5,7 +5,7 @@
  * promotion overlay) and bridges its callbacks to the game store. BoardView is
  * game-critical and uses no vd3, so it is kept verbatim rather than rewritten.
  */
-import { onMounted, onBeforeUnmount, ref } from "vue";
+import { onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { BoardView } from "../../js/ui/BoardView.js";
 import { useGameStore } from "../composables/useGameStore";
 import { useI18n } from "../composables/useI18n";
@@ -25,6 +25,10 @@ onMounted(() => {
     t: t.value,
   });
   store.attachBoard(boardView);
+});
+
+watch(t, (next) => {
+  boardView?.setI18n(next);
 });
 
 onBeforeUnmount(() => {

@@ -9,7 +9,7 @@ import { useI18n } from "../../composables/useI18n";
 const { changelogOpen } = useModals();
 const { t, locale } = useI18n();
 
-const entries = computed(() => CHANGELOG_ENTRIES[locale.value]);
+const entries = computed(() => CHANGELOG_ENTRIES[locale.value] ?? CHANGELOG_ENTRIES.en);
 </script>
 
 <template>

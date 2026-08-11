@@ -180,6 +180,33 @@ export class BoardView {
     this.initBoard();
   }
 
+  /** Update translations (e.g. after locale switch) and refresh live ARIA labels. */
+  setI18n(t: BoardViewI18n): void {
+    this._t = t;
+    this.squareEls.forEach((squareEl) => {
+      const pieceEl = squareEl.querySelector(".chess-piece") as HTMLElement | null;
+      if (!pieceEl) return;
+      const code = pieceEl.getAttribute("data-piece") as PieceCode | null;
+      if (code) {
+        pieceEl.setAttribute("aria-label", pieceLabel(this._t, code) || code);
+      } else {
+        pieceEl.setAttribute("aria-label", this._t.board.empty);
+      }
+    });
+    if (this._promotionPicker) {
+      this._promotionPicker.setAttribute("aria-label", this._t.board.promotion);
+      this._promotionPicker.querySelectorAll(".promotion-picker-option").forEach((node) => {
+        const option = node as HTMLElement;
+        const code = option.getAttribute("data-code") as PieceCode | null;
+        if (!code) return;
+        const label = pieceLabel(this._t, code) || code;
+        option.setAttribute("aria-label", label);
+        const img = option.querySelector("img");
+        if (img) img.alt = label;
+      });
+    }
+  }
+
   /** Initialize board DOM once. Default orientation a1 bottom-left. */
   initBoard(): void {
     this.container.innerHTML = "";
@@ -428,6 +455,7 @@ export class BoardView {
       option.className = "promotion-picker-option";
       option.setAttribute("role", "option");
       option.setAttribute("aria-label", pieceLabel(this._t, code) || code);
+      option.setAttribute("data-code", code);
       option.dataset.piece = piece;
 
       const img = document.createElement("img");

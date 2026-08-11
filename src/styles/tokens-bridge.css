@@ -40,6 +40,7 @@
   --bg-secondary: var(--vd-bg-secondary);
   --border-color: var(--vd-border-color);
 
+  --shadow-sm: var(--vd-shadow-sm);
   --shadow-xl: var(--vd-shadow-xl);
   --shadow-2xl: var(--vd-shadow-2xl);
 

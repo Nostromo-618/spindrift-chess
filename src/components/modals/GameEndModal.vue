@@ -3,7 +3,7 @@
 import { computed } from "vue";
 import { VdModal, VdButton } from "@vanduo-oss/vd3";
 import { useGameStore, type GameEndPayload } from "../../composables/useGameStore";
-import { useI18n } from "../../composables/useI18n";
+import { useI18n, translateDrawReason } from "../../composables/useI18n";
 
 const store = useGameStore();
 const { gameEndResult } = store;
@@ -50,14 +50,16 @@ const view = computed((): EndView => {
     return {
       icon: "ph-handshake",
       title: t.value.gameEnd.drawTitle,
-      message: t.value.gameEnd.drawMessage({ reason: result.reason || "by agreement" }),
+      message: t.value.gameEnd.drawMessage({
+        reason: translateDrawReason(result.reason),
+      }),
       tone: "draw",
     };
   }
   return {
     icon: "ph-flag",
     title: t.value.gameEnd.gameOverTitle,
-    message: result.reason || t.value.gameEnd.gameOverMessage,
+    message: result.reason ? translateDrawReason(result.reason) : t.value.gameEnd.gameOverMessage,
     tone: "draw",
   };
 });

@@ -52,3 +52,18 @@ export function getLocale(): Locale {
 export function getT(): TranslationMap {
   return LOCALES[currentLocale.value];
 }
+
+/** Engine draw reasons are English literals; map them for UI display. */
+const DRAW_REASON_KEYS: Record<string, keyof TranslationMap["drawReason"]> = {
+  "50-move rule": "fiftyMove",
+  "Threefold repetition": "threefold",
+  "Insufficient material": "insufficientMaterial",
+  "by agreement": "agreement",
+};
+
+export function translateDrawReason(reason: string | null | undefined): string {
+  const t = getT();
+  const key = DRAW_REASON_KEYS[reason || "by agreement"];
+  if (key) return t.drawReason[key];
+  return reason || t.drawReason.agreement;
+}

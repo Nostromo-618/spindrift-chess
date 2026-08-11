@@ -82,6 +82,12 @@ export const LT: TranslationMap = {
     draw: ({ reason }) => `Lygiosios: ${reason}.`,
     turnStatus: ({ color, perspective }) => `${color} ėjimas. ${perspective}.`,
   },
+  drawReason: {
+    fiftyMove: "50 ėjimų taisyklė",
+    threefold: "trigubas pozicijos pasikartojimas",
+    insufficientMaterial: "nepakanka figūrų",
+    agreement: "susitarimu",
+  },
   history: {
     label: "Ėjimų istorija",
     title: "Ėjimų istorija",

@@ -84,7 +84,7 @@ onBeforeUnmount(() => {
             :aria-label="t.theme.close"
             @click="closePanel"
           >
-            <i class="ph ph-x" aria-hidden="true"></i>
+            <i class="ph-bold ph-x" aria-hidden="true"></i>
           </button>
         </div>
 
