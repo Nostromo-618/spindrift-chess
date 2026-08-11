@@ -5,11 +5,13 @@
  * promotion overlay) and bridges its callbacks to the game store. BoardView is
  * game-critical and uses no vd3, so it is kept verbatim rather than rewritten.
  */
-import { onMounted, onBeforeUnmount, ref } from "vue";
+import { onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { BoardView } from "../../js/ui/BoardView.js";
 import { useGameStore } from "../composables/useGameStore";
+import { useI18n } from "../composables/useI18n";
 
 const store = useGameStore();
+const { t } = useI18n();
 const container = ref<HTMLElement | null>(null);
 let boardView: BoardView | null = null;
 
@@ -20,8 +22,13 @@ onMounted(() => {
     onSquareSelected: (sq) => store.handleSquareSelected(sq),
     onPromotionPicked: (piece) => store.handlePromotionPicked(piece),
     onPromotionCancelled: () => store.handlePromotionCancelled(),
+    t: t.value,
   });
   store.attachBoard(boardView);
+});
+
+watch(t, (next) => {
+  boardView?.setI18n(next);
 });
 
 onBeforeUnmount(() => {
@@ -32,5 +39,5 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div id="board-container" ref="container" aria-label="Chess board" role="grid"></div>
+  <div id="board-container" ref="container" :aria-label="t.board.label" role="grid"></div>
 </template>

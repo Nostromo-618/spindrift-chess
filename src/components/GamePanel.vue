@@ -7,21 +7,21 @@ import StatusPanel from "./StatusPanel.vue";
 import MoveHistory from "./MoveHistory.vue";
 import SidePanelFooter from "./SidePanelFooter.vue";
 import { useGameStore } from "../composables/useGameStore";
-import { getEngineStrengthControlLabel } from "../../js/engineAdapter.js";
+import { useI18n } from "../composables/useI18n";
 import { MIN_THINK_TIME_MS, MAX_THINK_TIME_MS } from "../../js/storage.js";
 import type { ColorChoice } from "../../js/Game.js";
 
 const store = useGameStore();
 const { settings, canUndo } = store;
+const { t } = useI18n();
 
-const colorOptions: { value: ColorChoice; label: string }[] = [
-  { value: "white", label: "White" },
-  { value: "black", label: "Black" },
-  { value: "random", label: "Random" },
-];
+const colorOptions = computed(() => [
+  { value: "white" as ColorChoice, label: t.value.color.white },
+  { value: "black" as ColorChoice, label: t.value.color.black },
+  { value: "random" as ColorChoice, label: t.value.color.random },
+]);
 
-const strengthLabel = getEngineStrengthControlLabel();
-const thinkTimeLabel = computed(() => `Thinking time (${settings.thinkTimeSec}s)`);
+const thinkTimeLabel = computed(() => t.value.game.thinkTime({ sec: settings.thinkTimeSec }));
 const thinkTimeMinSec = Math.round(MIN_THINK_TIME_MS / 1000);
 const thinkTimeMaxSec = Math.round(MAX_THINK_TIME_MS / 1000);
 </script>
@@ -37,7 +37,7 @@ const thinkTimeMaxSec = Math.round(MAX_THINK_TIME_MS / 1000);
         @click="store.newGame()"
       >
         <i class="ph-bold ph-flag-checkered" aria-hidden="true"></i>
-        New Game
+        {{ t.game.newGame }}
       </VdButton>
       <VdButton
         id="undo-move-btn"
@@ -45,19 +45,19 @@ const thinkTimeMaxSec = Math.round(MAX_THINK_TIME_MS / 1000);
         class="undo-move-btn"
         :ring="true"
         :disabled="!canUndo"
-        title="Take back your last move and the computer's reply"
+        :title="t.game.undoTitle"
         @click="store.undoLastMove()"
       >
         <i class="ph-bold ph-arrow-counter-clockwise" aria-hidden="true"></i>
-        Undo
+        {{ t.game.undo }}
       </VdButton>
     </div>
 
-    <h2 class="panel-heading">Game Settings</h2>
+    <h2 class="panel-heading">{{ t.game.settings }}</h2>
 
     <SegmentedControl
       id="color-choice"
-      label="Play as"
+      :label="t.game.playAs"
       data-key="color"
       :options="colorOptions"
       :model-value="settings.color"
@@ -68,7 +68,7 @@ const thinkTimeMaxSec = Math.round(MAX_THINK_TIME_MS / 1000);
       <VdSlider
         v-if="!settings.uncapped"
         id="strength-slider"
-        :label="strengthLabel"
+        :label="t.engine.strength"
         :model-value="settings.difficulty"
         :min="1"
         :max="6"
@@ -80,12 +80,12 @@ const thinkTimeMaxSec = Math.round(MAX_THINK_TIME_MS / 1000);
         id="uncapped-switch"
         class="uncapped-switch"
         size="sm"
-        label="Uncapped Spindrift strength"
+        :label="t.game.uncapped"
         :model-value="settings.uncapped"
         @update:model-value="(v) => store.setUncapped(Boolean(v))"
       />
       <p v-if="settings.uncapped" class="settings-note">
-        Thinks as deep as time allows (up to 56 ply).
+        {{ t.game.uncappedNote }}
       </p>
       <VdSlider
         v-if="settings.uncapped"
@@ -100,7 +100,7 @@ const thinkTimeMaxSec = Math.round(MAX_THINK_TIME_MS / 1000);
       />
     </div>
     <p class="settings-note">
-      Strength changes apply to your current game; color takes effect on your next New Game.
+      {{ t.game.strengthChangeNote }}
     </p>
 
     <VdSeparator />

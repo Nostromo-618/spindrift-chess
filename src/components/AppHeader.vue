@@ -1,13 +1,17 @@
 <script setup lang="ts">
-/** Sticky app header: brand, live "thinking" indicator, and header controls
- *  (info, source, theme switcher, theme customizer) with a mobile offcanvas. */
+/** Sticky app header: brand, live "thinking" indicator, locale switcher,
+ *  and header controls (info, source, theme switcher, theme customizer)
+ *  with a mobile offcanvas. */
 import { ref } from "vue";
 import { VdThemeSwitcher, VdOffcanvas } from "@vanduo-oss/vd3";
+import LocaleSwitcher from "./LocaleSwitcher.vue";
 import { useGameStore } from "../composables/useGameStore";
 import { useModals } from "../composables/useModals";
+import { useI18n } from "../composables/useI18n";
 
 const { status } = useGameStore();
 const { openDisclaimer } = useModals();
+const { t } = useI18n();
 
 const menuOpen = ref(false);
 
@@ -20,6 +24,9 @@ function openCustomizer(): void {
 function fromMenu(action: () => void): void {
   menuOpen.value = false;
   action();
+}
+function onLocaleSelect(): void {
+  menuOpen.value = false;
 }
 </script>
 
@@ -35,7 +42,7 @@ function fromMenu(action: () => void): void {
           alt=""
           aria-hidden="true"
         />
-        <span class="app-title-text">Spindrift Chess</span>
+        <span class="app-title-text">{{ t.app.title }}</span>
         <i
           class="ph-bold ph-brain thinking-icon"
           :class="{ 'thinking-icon--active blinking': status.busy }"
@@ -44,6 +51,9 @@ function fromMenu(action: () => void): void {
       </h1>
 
       <div class="header-right">
+        <!-- Locale switcher: inline SVG flags + sliding thumb bubble -->
+        <LocaleSwitcher @select="onLocaleSelect" />
+
         <!-- Theme mode toggle: always visible in the header (both breakpoints). -->
         <VdThemeSwitcher id="theme-toggle-btn" :menu="false" />
 
@@ -53,7 +63,7 @@ function fromMenu(action: () => void): void {
             id="disclaimer-info-btn"
             type="button"
             class="header-icon-btn"
-            aria-label="About this app and terms"
+            :aria-label="t.header.aboutAria"
             @click="openDisclaimer"
           >
             <i class="ph-bold ph-info" aria-hidden="true"></i>
@@ -64,14 +74,14 @@ function fromMenu(action: () => void): void {
             :href="REPO_URL"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="View source on GitHub"
+            :aria-label="t.header.githubAria"
           >
             <i class="ph-bold ph-github-logo" aria-hidden="true"></i>
           </a>
           <button
             type="button"
             class="header-icon-btn"
-            aria-label="Open theme customizer"
+            :aria-label="t.header.customizeAria"
             @click="openCustomizer"
           >
             <i class="ph-bold ph-paint-roller" aria-hidden="true"></i>
@@ -83,7 +93,7 @@ function fromMenu(action: () => void): void {
           id="mobile-menu-toggle"
           type="button"
           class="header-icon-btn mobile-menu-toggle"
-          aria-label="Open header menu"
+          :aria-label="t.header.menuOpen"
           :aria-expanded="menuOpen ? 'true' : 'false'"
           @click="menuOpen = true"
         >
@@ -93,10 +103,13 @@ function fromMenu(action: () => void): void {
     </div>
 
     <VdOffcanvas v-model="menuOpen" placement="right">
-      <nav class="header-menu" aria-label="Header menu">
+      <nav class="header-menu" :aria-label="t.header.menuAria">
+        <div class="header-menu-locale">
+          <LocaleSwitcher @select="onLocaleSelect" />
+        </div>
         <button type="button" class="header-menu-item" @click="fromMenu(openDisclaimer)">
           <i class="ph-bold ph-info" aria-hidden="true"></i>
-          <span>About</span>
+          <span>{{ t.header.about }}</span>
         </button>
         <a
           class="header-menu-item"
@@ -106,11 +119,11 @@ function fromMenu(action: () => void): void {
           @click="menuOpen = false"
         >
           <i class="ph-bold ph-github-logo" aria-hidden="true"></i>
-          <span>GitHub</span>
+          <span>{{ t.header.github }}</span>
         </a>
         <button type="button" class="header-menu-item" @click="fromMenu(openCustomizer)">
           <i class="ph-bold ph-paint-roller" aria-hidden="true"></i>
-          <span>Customize theme</span>
+          <span>{{ t.header.customize }}</span>
         </button>
       </nav>
     </VdOffcanvas>

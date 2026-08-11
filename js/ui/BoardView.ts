@@ -28,6 +28,28 @@ export interface BoardViewCallbacks {
   onPromotionCancelled?: () => void;
 }
 
+/** Subset of the full i18n map needed by BoardView. */
+export interface BoardViewI18n {
+  piece: {
+    whitePawn: string;
+    whiteKnight: string;
+    whiteBishop: string;
+    whiteRook: string;
+    whiteQueen: string;
+    whiteKing: string;
+    blackPawn: string;
+    blackKnight: string;
+    blackBishop: string;
+    blackRook: string;
+    blackQueen: string;
+    blackKing: string;
+  };
+  board: {
+    empty: string;
+    promotion: string;
+  };
+}
+
 export interface RenderOptions {
   perspective: PieceColor;
   selected: string | null;
@@ -69,6 +91,37 @@ const PIECE_DESCRIPTIONS: Record<PieceCode, string> = {
   bK: "Black king",
 };
 
+const PIECE_TO_I18N_KEY: Record<PieceCode, keyof BoardViewI18n["piece"]> = {
+  wP: "whitePawn",
+  wN: "whiteKnight",
+  wB: "whiteBishop",
+  wR: "whiteRook",
+  wQ: "whiteQueen",
+  wK: "whiteKing",
+  bP: "blackPawn",
+  bN: "blackKnight",
+  bB: "blackBishop",
+  bR: "blackRook",
+  bQ: "blackQueen",
+  bK: "blackKing",
+};
+
+function pieceLabel(t: BoardViewI18n, code: PieceCode): string {
+  const key = PIECE_TO_I18N_KEY[code];
+  return key ? t.piece[key] : PIECE_DESCRIPTIONS[code] || code;
+}
+
+function buildFallbackI18n(): BoardViewI18n {
+  const piece = {} as BoardViewI18n["piece"];
+  for (const code of Object.keys(PIECE_TO_I18N_KEY) as PieceCode[]) {
+    piece[PIECE_TO_I18N_KEY[code]] = PIECE_DESCRIPTIONS[code];
+  }
+  return {
+    piece,
+    board: { empty: "Empty square", promotion: "Choose promotion piece" },
+  };
+}
+
 export class BoardView {
   container: HTMLElement;
   onSquareSelected: (square: string) => void;
@@ -86,17 +139,25 @@ export class BoardView {
   currentPerspective: PieceColor;
   promotionPending: boolean;
 
+  private _t: BoardViewI18n;
+
   private _promotionBackdrop: HTMLElement | null = null;
   private _promotionPicker: HTMLElement | null = null;
 
   constructor(
     container: HTMLElement,
-    { onSquareSelected, onPromotionPicked, onPromotionCancelled }: BoardViewCallbacks = {},
+    {
+      onSquareSelected,
+      onPromotionPicked,
+      onPromotionCancelled,
+      t,
+    }: BoardViewCallbacks & { t?: BoardViewI18n } = {},
   ) {
     if (!container) {
       throw new Error("BoardView: container element is required.");
     }
 
+    this._t = t ?? buildFallbackI18n();
     this.container = container;
     this.onSquareSelected = onSquareSelected || (() => {});
     this.onPromotionPicked = onPromotionPicked || (() => {});
@@ -117,6 +178,33 @@ export class BoardView {
     this._handlePromotionKeydown = this._handlePromotionKeydown.bind(this);
 
     this.initBoard();
+  }
+
+  /** Update translations (e.g. after locale switch) and refresh live ARIA labels. */
+  setI18n(t: BoardViewI18n): void {
+    this._t = t;
+    this.squareEls.forEach((squareEl) => {
+      const pieceEl = squareEl.querySelector(".chess-piece") as HTMLElement | null;
+      if (!pieceEl) return;
+      const code = pieceEl.getAttribute("data-piece") as PieceCode | null;
+      if (code) {
+        pieceEl.setAttribute("aria-label", pieceLabel(this._t, code) || code);
+      } else {
+        pieceEl.setAttribute("aria-label", this._t.board.empty);
+      }
+    });
+    if (this._promotionPicker) {
+      this._promotionPicker.setAttribute("aria-label", this._t.board.promotion);
+      this._promotionPicker.querySelectorAll(".promotion-picker-option").forEach((node) => {
+        const option = node as HTMLElement;
+        const code = option.getAttribute("data-code") as PieceCode | null;
+        if (!code) return;
+        const label = pieceLabel(this._t, code) || code;
+        option.setAttribute("aria-label", label);
+        const img = option.querySelector("img");
+        if (img) img.alt = label;
+      });
+    }
   }
 
   /** Initialize board DOM once. Default orientation a1 bottom-left. */
@@ -232,7 +320,7 @@ export class BoardView {
         }
         img.src = getPieceImageUrl(code);
         pieceEl.setAttribute("data-piece", code);
-        pieceEl.setAttribute("aria-label", PIECE_DESCRIPTIONS[code as PieceCode] || code);
+        pieceEl.setAttribute("aria-label", pieceLabel(this._t, code as PieceCode) || code);
         pieceEl.classList.add("has-piece");
       } else {
         const img = pieceEl.querySelector("img");
@@ -240,7 +328,7 @@ export class BoardView {
           img.remove();
         }
         pieceEl.removeAttribute("data-piece");
-        pieceEl.setAttribute("aria-label", "Empty square");
+        pieceEl.setAttribute("aria-label", this._t.board.empty);
         pieceEl.classList.remove("has-piece");
       }
 
@@ -357,7 +445,7 @@ export class BoardView {
     picker.style.left = `${colIndex * 12.5}%`;
     picker.style.top = `${rowIndex * 12.5}%`;
     picker.setAttribute("role", "listbox");
-    picker.setAttribute("aria-label", "Choose promotion piece");
+    picker.setAttribute("aria-label", this._t.board.promotion);
 
     for (let i = 0; i < pieces.length; i++) {
       const piece = pieces[i];
@@ -366,12 +454,13 @@ export class BoardView {
       const option = document.createElement("div");
       option.className = "promotion-picker-option";
       option.setAttribute("role", "option");
-      option.setAttribute("aria-label", PIECE_DESCRIPTIONS[code] || code);
+      option.setAttribute("aria-label", pieceLabel(this._t, code) || code);
+      option.setAttribute("data-code", code);
       option.dataset.piece = piece;
 
       const img = document.createElement("img");
       img.src = getPieceImageUrl(code);
-      img.alt = PIECE_DESCRIPTIONS[code] || code;
+      img.alt = pieceLabel(this._t, code) || code;
       img.classList.add("promotion-picker-img");
       img.draggable = false;
       option.appendChild(img);

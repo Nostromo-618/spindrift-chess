@@ -5,6 +5,18 @@ All notable changes to Spindrift Chess will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-08-11
+
+### Added
+
+- **EN/LT internationalisation**: Lightweight `useI18n()` composable with locale maps under `src/locales/`, persisting the active locale to `sdc-locale`. Every user-facing string is translated; the brand name “Spindrift” is never altered.
+- **Locale switcher**: Header EN/LT segmented control with inline SVG flags and a sliding primary thumb.
+- **Translated theme customizer**: App-owned `AppThemeCustomizer` replacing vd3’s English-only panel, reusing vd3 theme preference APIs.
+- **Game-end Phosphor icons**: Checkmate, resignation, draw, and stalemate outcomes use tone-coloured Phosphor bold icons instead of emoji.
+- **OpenSpec**: `openspec/specs/i18n-and-ui/spec.md` documents i18n and UI icon requirements.
+
+---
+
 ## [1.1.0] - 2026-08-11
 
 ### Added

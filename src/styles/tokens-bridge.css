@@ -18,6 +18,7 @@
   --color-white: var(--vd-color-white);
   --color-error: var(--vd-color-error);
   --color-success: var(--vd-color-success);
+  --color-primary-contrast: var(--vd-color-white);
   --color-text: var(--vd-text-primary);
   --color-subtle-text: var(--vd-text-muted);
   --color-border: var(--vd-border-color);
@@ -39,6 +40,7 @@
   --bg-secondary: var(--vd-bg-secondary);
   --border-color: var(--vd-border-color);
 
+  --shadow-sm: var(--vd-shadow-sm);
   --shadow-xl: var(--vd-shadow-xl);
   --shadow-2xl: var(--vd-shadow-2xl);
 
@@ -79,16 +81,16 @@
   --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --shadow-soft: var(--shadow-xl);
 
-  --glass-bg: rgba(255, 255, 255, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --glass-blur: 24px;
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.55);
+  --glass-blur: 40px;
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 /* Dark theme overrides (explicit toggle + system preference). */
 [data-theme="dark"] {
-  --glass-bg: rgba(30, 30, 45, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(30, 30, 45, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.12);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   --board-light: #c2ab88;
   --board-dark: #8a6746;
@@ -98,8 +100,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --glass-bg: rgba(30, 30, 45, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-bg: rgba(30, 30, 45, 0.88);
+    --glass-border: rgba(255, 255, 255, 0.12);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     --board-light: #c2ab88;
     --board-dark: #8a6746;
