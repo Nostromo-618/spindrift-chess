@@ -46,7 +46,7 @@ export interface HighlightOptions {
 /**
  * URL prefix for piece SVGs. Under Vite the assets live in `public/pieces/` and
  * are served at `<base>/pieces/`; `import.meta.env.BASE_URL` makes this correct
- * for both dev (`/`) and production at the site root (spindriftchess.com).
+ * for both dev (`/`) and production at the site root (spindriftchess.online).
  */
 export const PIECE_IMAGE_BASE = `${import.meta.env.BASE_URL}pieces/spindrift`;
 

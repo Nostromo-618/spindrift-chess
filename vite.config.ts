@@ -7,8 +7,8 @@ const APP_VERSION = JSON.parse(
   readFileSync(fileURLToPath(new URL("./package.json", import.meta.url)), "utf8"),
 ).version as string;
 
-// Production is https://spindriftchess.com (GitHub Pages + custom domain) at site root.
-// Override with VITE_BASE=/spindrift-chess/ only if deploying to the github.io project path.
+// Production is https://spindriftchess.online (Cloudflare Pages) at site root.
+// Override with VITE_BASE only for rare non-root deploys.
 const BASE = process.env.VITE_BASE ?? "/";
 
 export default defineConfig(({ command }) => ({
