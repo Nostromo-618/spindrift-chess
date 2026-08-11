@@ -38,6 +38,14 @@
   min-width: 0;
 }
 
+/* ── Glass surface (header / chrome) ───────────────────────────────────── */
+.glass-panel {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
+}
+
 /* ── Header ────────────────────────────────────────────────────────────── */
 .app-header {
   position: sticky;
