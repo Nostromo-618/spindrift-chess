@@ -779,7 +779,7 @@ function rookHasLineToKing(board: Board, rookIndex: number, kingIndex: number): 
   const kf = kingIndex % 8;
   const kr = Math.floor(kingIndex / 8);
 
-  let step = 0;
+  let step: number;
   if (rf === kf) step = kr > rr ? 8 : -8;
   else if (rr === kr) step = kf > rf ? 1 : -1;
   else return false;
