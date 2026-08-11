@@ -4,7 +4,7 @@
   <img src="public/brand/spindrift-rook.svg" alt="Spindrift Chess" width="48" height="48" />
 </p>
 
-**Play:** [spindriftchess.com](https://spindriftchess.com)
+**Play:** [spindriftchess.online](https://spindriftchess.online)
 
 Browser chess: human vs the Spindrift Engine. Vue 3 + TypeScript + [vd3](https://vd3.vanduo.dev/). No accounts or server — everything runs client-side.
 
