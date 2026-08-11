@@ -1,18 +1,23 @@
 <script setup lang="ts">
 /** Release notes, rendered from the app's structured changelog data. */
+import { computed } from "vue";
 import { VdModal, VdBadge } from "@vanduo-oss/vd3";
 import { CHANGELOG_ENTRIES } from "../../../js/data/changelogData.js";
 import { useModals } from "../../composables/useModals";
+import { useI18n } from "../../composables/useI18n";
 
 const { changelogOpen } = useModals();
+const { t, locale } = useI18n();
+
+const entries = computed(() => CHANGELOG_ENTRIES[locale.value]);
 </script>
 
 <template>
-  <VdModal v-model:open="changelogOpen" size="lg" title="Changelog">
+  <VdModal v-model:open="changelogOpen" size="lg" :title="t.changelog.title">
     <div id="changelog-modal" class="changelog-scope">
-      <p class="changelog-subtitle">Release notes for Spindrift Chess.</p>
+      <p class="changelog-subtitle">{{ t.changelog.subtitle }}</p>
 
-      <article v-for="entry in CHANGELOG_ENTRIES" :key="entry.version" class="version-card">
+      <article v-for="entry in entries" :key="entry.version" class="version-card">
         <header class="version-header">
           <div class="version-meta">
             <VdBadge variant="secondary">{{ entry.version }}</VdBadge>
@@ -20,7 +25,7 @@ const { changelogOpen } = useModals();
               <i class="ph-bold ph-calendar-dots" aria-hidden="true"></i>
               {{ entry.date }}
             </span>
-            <VdBadge v-if="entry.latest" variant="primary">Latest</VdBadge>
+            <VdBadge v-if="entry.latest" variant="primary">{{ t.changelog.latest }}</VdBadge>
           </div>
         </header>
 

@@ -18,6 +18,7 @@
   --color-white: var(--vd-color-white);
   --color-error: var(--vd-color-error);
   --color-success: var(--vd-color-success);
+  --color-primary-contrast: var(--vd-color-white);
   --color-text: var(--vd-text-primary);
   --color-subtle-text: var(--vd-text-muted);
   --color-border: var(--vd-border-color);

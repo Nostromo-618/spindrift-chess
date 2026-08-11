@@ -115,6 +115,97 @@
   flex-shrink: 0;
 }
 
+/* ── Locale switcher (segmented with sliding thumb) ──────────────────── */
+.locale-switcher {
+  --lsw-seg-w: 2.8rem;
+  --lsw-overhang: 0.25rem;
+
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 2px;
+  border: 1px solid var(--vd-border);
+  border-radius: var(--radius-md);
+  background: var(--vd-bg-secondary);
+}
+
+.locale-switcher-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: calc(2px - var(--lsw-overhang));
+  width: calc(var(--lsw-seg-w) + var(--lsw-overhang));
+  border-radius: calc(var(--radius-md) - 2px);
+  background: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.locale-switcher-thumb.is-lt {
+  transform: translateX(var(--lsw-seg-w));
+}
+
+.locale-switcher-option {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  width: var(--lsw-seg-w);
+  min-width: 0;
+  padding: 0.2rem 0.35rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.locale-switcher-option:hover,
+.locale-switcher-option:focus-visible {
+  color: var(--text-primary);
+}
+
+.locale-switcher-option.active {
+  color: var(--color-primary-contrast);
+}
+
+.locale-switcher-flag {
+  display: block;
+  width: 1.15em;
+  height: 0.8em;
+  flex-shrink: 0;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.locale-switcher-code {
+  line-height: 1;
+}
+
+/* Offcanvas locale slot: use same component, slightly larger. */
+.header-menu-locale {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--vd-border);
+  margin-bottom: 0.5rem;
+}
+
+.header-menu-locale .locale-switcher {
+  --lsw-seg-w: 3.2rem;
+}
+
+.header-menu-locale .locale-switcher-option {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.4rem;
+}
+
 .header-controls {
   display: flex;
   align-items: center;
@@ -508,6 +599,17 @@
   line-height: 1;
   margin-bottom: 0.75rem;
   animation: modalIconPop 0.4s ease-out;
+}
+
+/* Tone-coloured icon to match the title colour. */
+.game-end-tone-victory .game-end-icon {
+  color: var(--color-success);
+}
+.game-end-tone-defeat .game-end-icon {
+  color: var(--color-error);
+}
+.game-end-tone-draw .game-end-icon {
+  color: var(--color-primary);
 }
 
 @keyframes modalIconPop {

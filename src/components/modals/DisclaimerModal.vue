@@ -9,8 +9,10 @@
 import { setDisclaimerAccepted } from "../../../js/storage.js";
 import { VdModal, VdButton } from "@vanduo-oss/vd3";
 import { useModals } from "../../composables/useModals";
+import { useI18n } from "../../composables/useI18n";
 
 const { disclaimerOpen, closeDisclaimer } = useModals();
+const { t } = useI18n();
 
 /** Same brand mark as the navbar (`AppHeader`). */
 const BRAND_ICON = `${import.meta.env.BASE_URL}brand/spindrift-rook.svg`;
@@ -36,44 +38,43 @@ function accept(): void {
           />
         </span>
         <h2 id="disclaimer-modal-title" class="disclaimer-modal-title">
-          Welcome to Spindrift Chess
+          {{ t.disclaimer.title }}
         </h2>
       </div>
     </template>
 
     <div id="disclaimer-modal" class="disclaimer-scope">
       <p class="disclaimer-intro">
-        This application is an open-source, browser-based chess game running entirely in your
-        browser — no server, no account, no data collected.
+        {{ t.disclaimer.intro }}
       </p>
 
       <ul class="disclaimer-list">
         <li>
           <i class="ph-bold ph-info" aria-hidden="true"></i>
           <div class="disclaimer-li-body">
-            <strong>For entertainment only.</strong> The computer engine is a hobby project and is
-            not a professional chess engine.
+            <strong>{{ t.disclaimer.entertainmentTitle }}</strong>
+            {{ t.disclaimer.entertainmentBody }}
           </div>
         </li>
         <li>
           <i class="ph-bold ph-database" aria-hidden="true"></i>
           <div class="disclaimer-li-body">
-            <strong>Local storage.</strong> Your settings and game progress are saved
-            <em>only</em> in your browser's local storage. Nothing is sent to any server.
+            <strong>{{ t.disclaimer.storageTitle }}</strong>
+            {{ t.disclaimer.storageBody }}
           </div>
         </li>
         <li>
           <i class="ph-bold ph-code" aria-hidden="true"></i>
           <div class="disclaimer-li-body">
-            <strong>Open source.</strong> This project is provided as-is under the MIT licence with
-            no warranty of any kind.
+            <strong>{{ t.disclaimer.opensourceTitle }}</strong>
+            {{ t.disclaimer.opensourceBody }}
           </div>
         </li>
         <li>
           <i class="ph-bold ph-horse" aria-hidden="true"></i>
           <div class="disclaimer-li-body">
-            <strong>Piece artwork.</strong> The board pieces are original Spindrift artwork,
-            licensed with the project under the
+            <strong>{{ t.disclaimer.artworkTitle }}</strong>
+            {{ t.disclaimer.artworkBody }}
             <a
               href="https://github.com/Nostromo-618/spindrift-chess/blob/main/LICENSE"
               target="_blank"
@@ -86,8 +87,8 @@ function accept(): void {
         <li>
           <i class="ph-bold ph-star" aria-hidden="true"></i>
           <div class="disclaimer-li-body">
-            <strong>Support the project.</strong> If you enjoy Spindrift Chess, please consider
-            starring the repository on GitHub:
+            <strong>{{ t.disclaimer.supportTitle }}</strong>
+            {{ t.disclaimer.supportBody }}
             <a
               href="https://github.com/Nostromo-618/spindrift-chess"
               target="_blank"
@@ -100,8 +101,7 @@ function accept(): void {
       </ul>
 
       <p class="disclaimer-footnote">
-        By clicking <strong>Accept &amp; Play</strong> you acknowledge these terms and allow the app
-        to save your preferences locally.
+        {{ t.disclaimer.footnote }}
       </p>
     </div>
 
@@ -114,7 +114,7 @@ function accept(): void {
         @click="accept"
       >
         <i class="ph-bold ph-check-circle" aria-hidden="true"></i>
-        Accept &amp; Play
+        {{ t.disclaimer.accept }}
       </VdButton>
     </template>
   </VdModal>

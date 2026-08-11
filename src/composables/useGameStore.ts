@@ -29,6 +29,7 @@ import {
 } from "../../js/storage.js";
 import type { SearchInfo } from "../../js/engineAdapter.js";
 import type { BoardView } from "../../js/ui/BoardView.js";
+import { getT } from "./useI18n";
 
 const MIN_THINK_TIME_SEC = Math.round(MIN_THINK_TIME_MS / 1000);
 const MAX_THINK_TIME_SEC = Math.round(MAX_THINK_TIME_MS / 1000);
@@ -89,11 +90,13 @@ export interface GameStore {
   setThinkTimeSec: (sec: number) => void;
   setBoardSizeSlider: (v: number) => void;
   getDisclaimerAccepted: typeof getDisclaimerAccepted;
+  /** Re-translate status text when locale changes. */
+  resyncStatus: () => void;
 }
 
 function createGameStore(): GameStore {
   const status = reactive<StatusState>({
-    text: "Ready. Select settings and click 'New Game' to start.",
+    text: getT().app.ready,
     turn: "",
     lastMove: "",
     busy: false,
@@ -113,6 +116,7 @@ function createGameStore(): GameStore {
 
   let game: Game | null = null;
   let boardView: BoardView | null = null;
+  let latestGameSnapshot: GameSnapshot | null = null;
   let isProcessingMove = false;
   let gameSaveThrottle: ReturnType<typeof setTimeout> | null = null;
   let pendingPromotion: { from: string; to: string } | null = null;
@@ -134,11 +138,14 @@ function createGameStore(): GameStore {
   }
 
   function formatThinkingStatus(info: SearchInfo | null, elapsedMs: number): string {
+    const t = getT();
     const details: string[] = [];
-    if (info && info.depthCompleted > 0) details.push(`depth ${info.depthCompleted}`);
-    if (info && info.nodes > 0) details.push(`${formatNodes(info.nodes)} nodes`);
+    if (info && info.depthCompleted > 0)
+      details.push(t.status.thinkingDepth({ depth: info.depthCompleted }));
+    if (info && info.nodes > 0)
+      details.push(t.status.thinkingNodes({ nodes: formatNodes(info.nodes) }));
     details.push(formatElapsed(elapsedMs));
-    return `Thinking… ${details.join(" · ")}`;
+    return `${t.status.thinking}… ${details.join(" · ")}`;
   }
 
   function updateThinkingStatus(): void {
@@ -170,8 +177,41 @@ function createGameStore(): GameStore {
   function syncUIWithGame(snapshot: GameSnapshot): void {
     if (!snapshot) return;
 
-    status.text = snapshot.statusText || "";
-    status.turn = snapshot.turnText || "";
+    latestGameSnapshot = snapshot;
+    const t = getT();
+
+    // Build translated status text from snapshot data
+    if (snapshot.result && snapshot.result.outcome !== "ongoing") {
+      switch (snapshot.result.outcome) {
+        case "checkmate": {
+          const winner = snapshot.result.winner === "white" ? t.color.white : t.color.black;
+          status.text = t.status.checkmate({ winner });
+          break;
+        }
+        case "stalemate":
+          status.text = t.status.stalemate;
+          break;
+        case "draw":
+          status.text = t.status.draw({ reason: snapshot.result.reason || "by agreement" });
+          break;
+        default:
+          status.text = "";
+      }
+    } else if (snapshot.activeColor) {
+      const color = snapshot.activeColor === "white" ? t.color.whiteGen : t.color.blackGen;
+      const perspective =
+        snapshot.activeColor === snapshot.playerColor ? t.status.yourMove : t.status.computerMove;
+      status.text = t.status.turnStatus({ color, perspective });
+    } else {
+      status.text = "";
+    }
+
+    status.turn =
+      snapshot.gameOver || !snapshot.activeColor
+        ? ""
+        : snapshot.activeColor === snapshot.playerColor
+          ? t.status.yourMove
+          : t.status.computerMove;
     status.lastMove = snapshot.lastMoveText || "";
     history.value = (snapshot.history || []).slice();
 
@@ -253,7 +293,7 @@ function createGameStore(): GameStore {
       }
     } catch (error) {
       console.error("Game initialization error:", error);
-      status.text = "Failed to initialize game. Please refresh and try again.";
+      status.text = getT().app.initError;
     }
   }
 
@@ -284,7 +324,7 @@ function createGameStore(): GameStore {
     } catch (error) {
       console.error("Game restore error:", error);
       clearGame();
-      status.text = "Ready. Select settings and click 'New Game' to start.";
+      status.text = getT().app.ready;
     }
   }
 
@@ -384,7 +424,7 @@ function createGameStore(): GameStore {
       }
     } catch (error) {
       console.error("AI move error:", error);
-      status.text = "An error occurred while computing AI move.";
+      status.text = getT().app.moveError;
     } finally {
       isProcessingMove = false;
       syncBusyState(false);
@@ -459,7 +499,15 @@ function createGameStore(): GameStore {
     if (savedGame) {
       await restoreGame(savedGame);
     } else {
-      status.text = "Ready. Select settings and click 'New Game' to start.";
+      status.text = getT().app.ready;
+    }
+  }
+
+  function resyncStatus(): void {
+    if (latestGameSnapshot) {
+      syncUIWithGame(latestGameSnapshot);
+    } else {
+      status.text = getT().app.ready;
     }
   }
 
@@ -484,6 +532,7 @@ function createGameStore(): GameStore {
     setThinkTimeSec,
     setBoardSizeSlider,
     getDisclaimerAccepted,
+    resyncStatus,
   };
 }
 
