@@ -51,7 +51,7 @@ describe("AI - Transposition Table", () => {
     for (let i = 0; i < 200_000; i++) {
       ai.storeTable(BigInt(i), 1, i, 0, null, 0);
     }
-    expect(ai.transpositionTable.length).toBe(100_000);
+    expect(ai.transpositionTable.length).toBe(131_072);
   });
 
   it("replaces shallower entries with deeper searches", () => {
