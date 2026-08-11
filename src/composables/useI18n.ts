@@ -11,7 +11,7 @@ const LOCALES: Record<Locale, TranslationMap> = { en: EN, lt: LT };
 function loadLocale(): Locale {
   try {
     const stored = localStorage.getItem(LOCALE_KEY);
-    if (stored === "lt") return "lt";
+    if (stored && stored in LOCALES) return stored as Locale;
   } catch {
     // localStorage unavailable — stick with en
   }

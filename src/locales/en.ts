@@ -32,13 +32,13 @@ export const EN: TranslationMap = {
       "Your settings and game progress are saved only in your browser's local storage. Nothing is sent to any server.",
     opensourceTitle: "Open source.",
     opensourceBody:
-      "This project is provided as-is under the MIT licence with no warranty of any kind.",
+      "This project is provided as-is under the MIT License with no warranty of any kind.",
     artworkTitle: "Piece artwork.",
     artworkBody:
-      "The board pieces are original Spindrift artwork, licensed with the project under the MIT Licence.",
+      "The board pieces are original Spindrift artwork, licensed with the project under the",
     supportTitle: "Support the project.",
     supportBody:
-      "If you enjoy Spindrift Chess, please consider starring the repository on GitHub: github.com/Nostromo-618/spindrift-chess.",
+      "If you enjoy Spindrift Chess, please consider starring the repository on GitHub:",
     footnote:
       "By clicking Accept & Play you acknowledge these terms and allow the app to save your preferences locally.",
     accept: "Accept & Play",

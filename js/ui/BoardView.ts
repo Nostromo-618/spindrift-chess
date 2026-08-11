@@ -111,6 +111,17 @@ function pieceLabel(t: BoardViewI18n, code: PieceCode): string {
   return key ? t.piece[key] : PIECE_DESCRIPTIONS[code] || code;
 }
 
+function buildFallbackI18n(): BoardViewI18n {
+  const piece = {} as BoardViewI18n["piece"];
+  for (const code of Object.keys(PIECE_TO_I18N_KEY) as PieceCode[]) {
+    piece[PIECE_TO_I18N_KEY[code]] = PIECE_DESCRIPTIONS[code];
+  }
+  return {
+    piece,
+    board: { empty: "Empty square", promotion: "Choose promotion piece" },
+  };
+}
+
 export class BoardView {
   container: HTMLElement;
   onSquareSelected: (square: string) => void;
@@ -146,12 +157,7 @@ export class BoardView {
       throw new Error("BoardView: container element is required.");
     }
 
-    this._t =
-      t ??
-      ({
-        piece: PIECE_DESCRIPTIONS,
-        board: { empty: "Empty square", promotion: "Choose promotion piece" },
-      } as unknown as BoardViewI18n);
+    this._t = t ?? buildFallbackI18n();
     this.container = container;
     this.onSquareSelected = onSquareSelected || (() => {});
     this.onPromotionPicked = onPromotionPicked || (() => {});

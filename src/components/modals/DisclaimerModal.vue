@@ -80,7 +80,7 @@ function accept(): void {
               target="_blank"
               rel="noopener noreferrer"
               class="disclaimer-inline-link"
-              >MIT Licence</a
+              >MIT License</a
             >.
           </div>
         </li>

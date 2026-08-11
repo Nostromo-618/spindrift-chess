@@ -157,7 +157,7 @@ onBeforeUnmount(() => {
 
         <div class="tc-footer">
           <button type="button" class="customizer-reset" @click="theme.reset()">
-            <i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i>
+            <i class="ph-bold ph-arrow-counter-clockwise" aria-hidden="true"></i>
             {{ t.theme.reset }}
           </button>
         </div>

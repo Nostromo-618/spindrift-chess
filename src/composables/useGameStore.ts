@@ -504,6 +504,10 @@ function createGameStore(): GameStore {
   }
 
   function resyncStatus(): void {
+    if (status.busy && thinkingStartedAt !== null) {
+      updateThinkingStatus();
+      return;
+    }
     if (latestGameSnapshot) {
       syncUIWithGame(latestGameSnapshot);
     } else {

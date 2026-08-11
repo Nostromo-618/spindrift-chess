@@ -28,7 +28,7 @@ function pick(value: Locale): void {
 </script>
 
 <template>
-  <div class="locale-switcher" role="group" :aria-label="t.header.localeGroup">
+  <div class="locale-switcher" role="radiogroup" :aria-label="t.header.localeGroup">
     <span
       class="locale-switcher-thumb"
       :class="{ 'is-lt': locale === 'lt' }"
@@ -39,10 +39,11 @@ function pick(value: Locale): void {
       v-for="opt in options"
       :key="opt.value"
       type="button"
+      role="radio"
       class="locale-switcher-option"
       :class="{ active: locale === opt.value }"
       :aria-label="opt.ariaLabel"
-      :aria-pressed="locale === opt.value"
+      :aria-checked="locale === opt.value"
       @click="pick(opt.value)"
     >
       <!-- EN – Union Jack -->
