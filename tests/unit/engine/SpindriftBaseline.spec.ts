@@ -49,7 +49,6 @@ function isLegalMove(move: Move | null, legalMoves: Move[]): boolean {
 
 describe("Spindrift Engine baseline gate", () => {
   it("hits fixed tactical positions", async () => {
-    const BASELINE = { tacticalHits: 2 };
     const positions: TacticalPosition[] = [
       {
         name: "white wins a loose queen",
@@ -78,19 +77,22 @@ describe("Spindrift Engine baseline gate", () => {
       const move = await ai.findBestMove(state, {
         level: 6,
         forColor: position.activeColor,
-        timeout: 1200,
+        timeout: 2000,
       });
       const id = moveId(move);
       attempts.push({
         name: position.name,
         move: id,
         hit: position.expected.includes(id),
+        ceilings: ai.getLastSearchInfo().plyCeilingHits + ai.getLastSearchInfo().qCeilingHits,
       });
     }
 
     const hits = attempts.filter((a) => a.hit).length;
     expect(attempts).toHaveLength(3);
-    expect(hits).toBeGreaterThan(BASELINE.tacticalHits);
+    // Strength gate: all three fixed tactics must resolve with the ply-ceiling fix.
+    expect(hits).toBe(3);
+    expect(attempts.every((a) => a.ceilings === 0)).toBe(true);
   }, 20_000);
 
   it("returns promptly under timeout pressure", async () => {

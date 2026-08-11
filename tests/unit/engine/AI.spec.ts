@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { AI, SearchState } from "../../../js/engine/AI.js";
+import { AI, MAX_PLY, MAX_QPLY, SearchState } from "../../../js/engine/AI.js";
 import { GameState } from "../../../js/engine/GameState.js";
 import { generateLegalMoves } from "../../../js/engine/Rules.js";
 import { algebraicToIndex } from "../../../js/engine/Board.js";
+import { parseFen } from "../../../js/engine/fen.js";
 import type { Board, Color, Move, Piece, RulesState } from "../../../js/engine/types.js";
 
 function buildState(pieces: [string, Piece][], activeColor: Color = "white"): RulesState {
@@ -276,5 +277,137 @@ describe("AI - Uncapped search", () => {
     });
     expect(move).not.toBeNull();
     expect(ai.getLastSearchInfo().depthCompleted).toBeLessThanOrEqual(3);
+  });
+});
+
+describe("AI - Stack safety", () => {
+  /** Screenshot reconstruction from the level-6 worker stack-overflow report. */
+  const CRASH_FEN = "rnbqk2r/ppp2ppp/8/8/1pP1n3/P2P4/1p1B1PPP/R2RKBNR b - - 0 20";
+
+  it("exposes finite ply ceilings", () => {
+    expect(MAX_PLY).toBe(128);
+    expect(MAX_QPLY).toBe(32);
+  });
+
+  it("returns a finite eval at the absolute ply ceiling", () => {
+    const ai = new AI();
+    ai.repetitionSet = new Set();
+    const state = new SearchState(parseFen(CRASH_FEN));
+    const score = ai.minimax(
+      state,
+      4,
+      -1e9,
+      1e9,
+      "black",
+      true,
+      6,
+      undefined,
+      undefined,
+      true,
+      MAX_PLY,
+    );
+    expect(score).not.toBeNull();
+    expect(Number.isFinite(score!)).toBe(true);
+  });
+
+  it("never recurses past MAX_PLY during a deep timed search", async () => {
+    const ai = new AI();
+    let maxPlySeen = 0;
+    const orig = ai.minimax.bind(ai);
+    ai.minimax = function (
+      state: SearchState,
+      depth: number,
+      alpha: number,
+      beta: number,
+      rootColor: Color,
+      isMaximizing: boolean,
+      level: number,
+      timeout?: number,
+      startTime?: number,
+      allowNullMove = true,
+      ply = 0,
+    ) {
+      if (ply > maxPlySeen) maxPlySeen = ply;
+      return orig(
+        state,
+        depth,
+        alpha,
+        beta,
+        rootColor,
+        isMaximizing,
+        level,
+        timeout,
+        startTime,
+        allowNullMove,
+        ply,
+      );
+    };
+
+    const move = await ai.findBestMove(parseFen(CRASH_FEN), {
+      level: 6,
+      forColor: "black",
+      timeout: 3000,
+    });
+    expect(move).not.toBeNull();
+    expect(maxPlySeen).toBeLessThan(MAX_PLY);
+    expect(ai.getLastSearchInfo().depthCompleted).toBeGreaterThanOrEqual(1);
+  }, 15_000);
+
+  it("survives the reported crash position at level 6", async () => {
+    const legal = new Set(
+      generateLegalMoves(parseFen(CRASH_FEN)).map((m) => `${m.from}${m.to}${m.promotion ?? ""}`),
+    );
+    for (let trial = 0; trial < 3; trial++) {
+      const ai = new AI();
+      const move = await ai.findBestMove(parseFen(CRASH_FEN), {
+        level: 6,
+        forColor: "black",
+        timeout: 5000,
+      });
+      expect(move).not.toBeNull();
+      const key = `${move!.from}${move!.to}${move!.promotion ?? ""}`;
+      expect(legal.has(key)).toBe(true);
+      expect(ai.getLastSearchInfo().depthCompleted).toBeGreaterThanOrEqual(1);
+      expect(ai.getLastSearchInfo().plyCeilingHits).toBe(0);
+      expect(ai.getLastSearchInfo().qCeilingHits).toBe(0);
+    }
+  }, 30_000);
+
+  it("survives a checking middlegame without stack overflow", async () => {
+    // Synthetic busy position: queens and rooks with the side to move in check.
+    const fen = "4k3/8/8/7Q/8/8/1q6/R3K2R b KQ - 0 1";
+    const state = parseFen(fen);
+    const legal = generateLegalMoves(state);
+    expect(legal.length).toBeGreaterThan(0);
+
+    const ai = new AI();
+    const move = await ai.findBestMove(state, {
+      level: 6,
+      forColor: "black",
+      timeout: 4000,
+    });
+    expect(move).not.toBeNull();
+    expect(legal.some((m) => m.from === move!.from && m.to === move!.to)).toBe(true);
+  }, 15_000);
+
+  it("quiescence returns a finite score at the Q ply ceiling", () => {
+    const ai = new AI();
+    ai.repetitionSet = new Set();
+    const state = new SearchState(parseFen(CRASH_FEN));
+    const standPat = 0;
+    const score = ai.quiescence(
+      state,
+      -1e9,
+      1e9,
+      "black",
+      standPat,
+      undefined,
+      undefined,
+      6,
+      10,
+      MAX_QPLY,
+    );
+    expect(score).not.toBeNull();
+    expect(Number.isFinite(score!)).toBe(true);
   });
 });

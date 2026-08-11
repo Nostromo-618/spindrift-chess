@@ -202,3 +202,57 @@ ply-adjusted as in the main search.
   search
 - **THEN** a compatible table entry supplies the score or bound without
   re-running the capture search
+
+### Requirement: Absolute search ply ceiling
+
+Main search and quiescence SHALL enforce an absolute recursion ceiling so the
+call stack cannot grow unboundedly. The main-search ply counter SHALL stop
+recursion by `MAX_PLY` (128) with a finite static evaluation. Quiescence SHALL
+additionally stop by `MAX_QPLY` (32) counted from the first quiescence node,
+returning stand-pat (or a mate score when the side to move has no legal
+evasion). Search SHALL never throw `RangeError: Maximum call stack size
+exceeded` due to unbounded recursion. Each search SHALL report
+`plyCeilingHits` / `qCeilingHits` counters (normally zero) so tests can prove
+the ceilings stay idle in ordinary play.
+
+#### Scenario: Continuous-check line completes without stack overflow
+
+- **WHEN** a search encounters a long line of checks that would otherwise keep
+  extending remaining depth indefinitely
+- **THEN** the search stops by the absolute ply ceiling with a finite score and
+  returns a legal best move (or abort on timeout), without overflowing the stack
+
+#### Scenario: Ordinary middlegame does not trip the ceiling
+
+- **WHEN** level 4–6 search a typical middlegame or the known crash-regression
+  FEN within a normal move-time budget
+- **THEN** `plyCeilingHits` and `qCeilingHits` remain 0 (extensions still run;
+  only pathological depth would increment the counters)
+
+### Requirement: Check extensions remain ply-bounded
+
+Check extensions MAY increase the remaining depth at a node (so tactical
+forcing lines are not truncated at the horizon), but SHALL NOT bypass the
+absolute ply ceiling. Extensions change how much depth remains, not how deep
+the call stack is allowed to grow.
+
+#### Scenario: Extension does not defeat the ply ceiling
+
+- **WHEN** a node is in check near the absolute ply ceiling and the check
+  extension would increase remaining depth
+- **THEN** the next ply still respects `MAX_PLY` and returns a finite score
+  rather than recursing further
+
+### Requirement: Quiescence draw-by-repetition
+
+Quiescence SHALL treat a repeated position (current search path or seeded game
+history since the last irreversible move) as a draw with score 0, so perpetual
+check sequences resolved in quiescence do not recurse forever and are scored
+correctly.
+
+#### Scenario: Perpetual check in quiescence scores as a draw
+
+- **WHEN** a quiescence line returns to a position already on the search path
+  or in the supplied game history
+- **THEN** that node scores 0 (draw) instead of continuing the capture /
+  evasion search
