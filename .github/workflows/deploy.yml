@@ -27,7 +27,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
         env:
-          VITE_BASE: /spindrift-chess/
+          VITE_BASE: /
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

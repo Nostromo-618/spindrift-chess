@@ -7,9 +7,9 @@ const APP_VERSION = JSON.parse(
   readFileSync(fileURLToPath(new URL("./package.json", import.meta.url)), "utf8"),
 ).version as string;
 
-// GitHub Pages serves this project at https://<user>.github.io/spindrift-chess/.
-// Override with VITE_BASE=/ (or a custom-domain root) when deploying elsewhere.
-const BASE = process.env.VITE_BASE ?? "/spindrift-chess/";
+// Production is https://spindriftchess.com (GitHub Pages + custom domain) at site root.
+// Override with VITE_BASE=/spindrift-chess/ only if deploying to the github.io project path.
+const BASE = process.env.VITE_BASE ?? "/";
 
 export default defineConfig(({ command }) => ({
   base: command === "build" ? BASE : "/",
