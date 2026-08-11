@@ -36,8 +36,7 @@ export const LT: TranslationMap = {
     artworkBody:
       "Lentos figūros yra originalus Spindrift dizainas, licencijuotas kartu su projektu pagal",
     supportTitle: "Paremkite projektą.",
-    supportBody:
-      "Jei jums patinka Spindrift Šachmatai, pažymėkite projektą žvaigždute GitHub:",
+    supportBody: "Jei jums patinka Spindrift Šachmatai, pažymėkite projektą žvaigždute GitHub:",
     footnote:
       "Spustelėdami „Sutinku ir žaisti“ patvirtinate šias sąlygas ir leidžiate programėlei išsaugoti jūsų nuostatas vietoje.",
     accept: "Sutinku ir žaisti",

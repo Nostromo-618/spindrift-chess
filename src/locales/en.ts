@@ -37,8 +37,7 @@ export const EN: TranslationMap = {
     artworkBody:
       "The board pieces are original Spindrift artwork, licensed with the project under the",
     supportTitle: "Support the project.",
-    supportBody:
-      "If you enjoy Spindrift Chess, please consider starring the repository on GitHub:",
+    supportBody: "If you enjoy Spindrift Chess, please consider starring the repository on GitHub:",
     footnote:
       "By clicking Accept & Play you acknowledge these terms and allow the app to save your preferences locally.",
     accept: "Accept & Play",
