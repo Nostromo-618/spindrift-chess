@@ -24,6 +24,19 @@ function bAt(board: Board, i: number): BoardSquare {
   return board[i] ?? null;
 }
 
+const PAWN_HASH_SIZE = 8192; // power of 2
+const PAWN_HASH_MASK = BigInt(PAWN_HASH_SIZE - 1);
+interface PawnHashEntry {
+  key: bigint;
+  mgScore: number;
+  egScore: number;
+}
+const pawnHashTable: Array<PawnHashEntry | undefined> = new Array(PAWN_HASH_SIZE);
+
+export function clearPawnHash(): void {
+  pawnHashTable.fill(undefined);
+}
+
 /* === Evaluation bonus/penalty constants === */
 const BISHOP_PAIR_BONUS_MG = 35;
 const BISHOP_PAIR_BONUS_EG = 55;
@@ -183,6 +196,7 @@ const PST_KING_EG = [
 export function evaluate(
   state: Pick<RulesState, "board"> & { activeColor?: Color },
   color: Color,
+  pawnHash?: bigint,
 ): number {
   const { board } = state;
   let mgScore = 0;
@@ -326,32 +340,85 @@ export function evaluate(
   }
 
   // Pawn structure evaluation (tapered)
-  const whitePawnEval = evaluatePawnStructure(
-    whitePawnPositions,
-    whitePawnFiles,
-    blackPawnFiles,
-    blackPawnPositions,
-    "white",
-    color,
-    phase,
-    board,
-    whiteRookPositions,
-  );
-  const blackPawnEval = evaluatePawnStructure(
-    blackPawnPositions,
-    blackPawnFiles,
-    whitePawnFiles,
-    whitePawnPositions,
-    "black",
-    color,
-    phase,
-    board,
-    blackRookPositions,
-  );
-  mgScore += whitePawnEval;
-  egScore += whitePawnEval;
-  mgScore += blackPawnEval;
-  egScore += blackPawnEval;
+  let pawnMg = 0;
+  let pawnEg = 0;
+  let cachedPawnEval = false;
+
+  if (pawnHash !== undefined) {
+    const idx = Number(pawnHash & PAWN_HASH_MASK);
+    const entry = pawnHashTable[idx];
+    if (entry && entry.key === pawnHash) {
+      pawnMg = entry.mgScore;
+      pawnEg = entry.egScore;
+      cachedPawnEval = true;
+    }
+  }
+
+  if (!cachedPawnEval) {
+    const wMg = evaluatePawnStructure(
+      whitePawnPositions,
+      whitePawnFiles,
+      blackPawnFiles,
+      blackPawnPositions,
+      "white",
+      "white",
+      1,
+      board,
+      whiteRookPositions,
+    );
+    const bMg = evaluatePawnStructure(
+      blackPawnPositions,
+      blackPawnFiles,
+      whitePawnFiles,
+      whitePawnPositions,
+      "black",
+      "white",
+      1,
+      board,
+      blackRookPositions,
+    );
+    const wEg = evaluatePawnStructure(
+      whitePawnPositions,
+      whitePawnFiles,
+      blackPawnFiles,
+      blackPawnPositions,
+      "white",
+      "white",
+      0,
+      board,
+      whiteRookPositions,
+    );
+    const bEg = evaluatePawnStructure(
+      blackPawnPositions,
+      blackPawnFiles,
+      whitePawnFiles,
+      whitePawnPositions,
+      "black",
+      "white",
+      0,
+      board,
+      blackRookPositions,
+    );
+
+    pawnMg = wMg + bMg;
+    pawnEg = wEg + bEg;
+
+    if (pawnHash !== undefined) {
+      pawnHashTable[Number(pawnHash & PAWN_HASH_MASK)] = {
+        key: pawnHash,
+        mgScore: pawnMg,
+        egScore: pawnEg,
+      };
+    }
+  }
+
+  if (color === "white") {
+    mgScore += pawnMg;
+    egScore += pawnEg;
+  } else {
+    mgScore -= pawnMg;
+    egScore -= pawnEg;
+  }
 
   // Rook on open/semi-open file
   const whiteRookEval = evaluateRooks(
@@ -417,6 +484,27 @@ export function evaluate(
   mgScore += whiteKingPressure;
   mgScore += blackKingPressure;
 
+  const whiteTropism = evaluateKingTropism(
+    whiteKingIndex,
+    blackKnights,
+    blackBishopList,
+    blackRookList,
+    blackQueens,
+    "white",
+    color,
+  );
+  const blackTropism = evaluateKingTropism(
+    blackKingIndex,
+    whiteKnights,
+    whiteBishopList,
+    whiteRookList,
+    whiteQueens,
+    "black",
+    color,
+  );
+  mgScore += whiteTropism;
+  mgScore += blackTropism;
+
   // Mobility evaluation
   const whiteMobility = evaluateMobility(
     board,
@@ -426,6 +514,7 @@ export function evaluate(
     whiteQueens,
     "white",
     color,
+    blackPawnPositions,
   );
   const blackMobility = evaluateMobility(
     board,
@@ -435,6 +524,7 @@ export function evaluate(
     blackQueens,
     "black",
     color,
+    whitePawnPositions,
   );
   mgScore += whiteMobility;
   egScore += whiteMobility;
@@ -493,10 +583,35 @@ function lerp(a: number, b: number, t: number): number {
 /**
  * Evaluate pawn structure for one color (tapered).
  */
+function isBackwardPawn(
+  file: number,
+  rank: number,
+  pawnColor: Color,
+  ownPawns: PawnPos[],
+  enemyPawns: PawnPos[],
+): boolean {
+  for (const p of ownPawns) {
+    if (Math.abs(p.file - file) === 1) {
+      if (pawnColor === "white" && p.rank <= rank) return false;
+      if (pawnColor === "black" && p.rank >= rank) return false;
+    }
+  }
+  const stopRank = pawnColor === "white" ? rank + 1 : rank - 1;
+  const attackRank = pawnColor === "white" ? stopRank + 1 : stopRank - 1;
+  let attacked = false;
+  for (const p of enemyPawns) {
+    if (p.rank === attackRank && Math.abs(p.file - file) === 1) {
+      attacked = true;
+      break;
+    }
+  }
+  return attacked;
+}
+
 function evaluatePawnStructure(
   pawnPositions: PawnPos[],
   ownPawnFiles: number[],
-  _enemyPawnFiles: number[],
+  enemyPawnFiles: number[],
   enemyPawnPositions: PawnPos[],
   pawnColor: Color,
   evalColor: Color,
@@ -521,6 +636,14 @@ function evaluatePawnStructure(
     const rightFile = file < 7 ? ownPawnFiles[file + 1] : 0;
     if (leftFile === 0 && rightFile === 0) {
       bonus -= ISOLATED_PAWN_PENALTY;
+    } else if (isBackwardPawn(file, rank, pawnColor, pawnPositions, enemyPawnPositions)) {
+      let backMg = 12;
+      let backEg = 8;
+      if (enemyPawnFiles[file] === 0) {
+        backMg *= 2;
+        backEg *= 2;
+      }
+      bonus -= lerp(backEg, backMg, phase);
     }
 
     // Passed pawn bonus (tapered)
@@ -635,10 +758,11 @@ function evaluateRookActivity(
       // 0 for black's target) — these are different ranks.
       const pawnTargetRank = rookColor === "white" ? 6 : 1;
       const kingConfinedRank = rookColor === "white" ? 7 : 0;
-      const hasTargets =
-        enemyPawns.some((p) => p.rank === pawnTargetRank) ||
-        (enemyKingIndex >= 0 && Math.floor(enemyKingIndex / 8) === kingConfinedRank);
-      if (hasTargets) bonus += ROOK_SEVENTH_RANK_BONUS;
+      const kingOn8th = enemyKingIndex >= 0 && Math.floor(enemyKingIndex / 8) === kingConfinedRank;
+      const hasTargets = enemyPawns.some((p) => p.rank === pawnTargetRank) || kingOn8th;
+      if (hasTargets) {
+        bonus += kingOn8th ? ROOK_SEVENTH_RANK_BONUS * 2 : ROOK_SEVENTH_RANK_BONUS;
+      }
     }
 
     if (enemyKingIndex >= 0 && rookHasLineToKing(board, rookIndex, enemyKingIndex)) {
@@ -655,7 +779,7 @@ function rookHasLineToKing(board: Board, rookIndex: number, kingIndex: number): 
   const kf = kingIndex % 8;
   const kr = Math.floor(kingIndex / 8);
 
-  let step = 0;
+  let step: number;
   if (rf === kf) step = kr > rr ? 8 : -8;
   else if (rr === kr) step = kf > rf ? 1 : -1;
   else return false;
@@ -903,9 +1027,20 @@ function evaluateMobility(
   queens: number[],
   pieceColor: Color,
   evalColor: Color,
+  enemyPawns: PawnPos[],
 ): number {
   let bonus = 0;
   const sign = pieceColor === evalColor ? 1 : -1;
+
+  const enemyPawnAttacks = new Set<number>();
+  const attackDir = pieceColor === "white" ? -1 : 1;
+  for (const p of enemyPawns) {
+    const ar = p.rank + attackDir;
+    if (ar >= 0 && ar <= 7) {
+      if (p.file > 0) enemyPawnAttacks.add(ar * 8 + p.file - 1);
+      if (p.file < 7) enemyPawnAttacks.add(ar * 8 + p.file + 1);
+    }
+  }
 
   // Knights
   const knightJumps: ReadonlyArray<readonly [number, number]> = [
@@ -928,7 +1063,9 @@ function evaluateMobility(
       const nf = f + df;
       const nr = r + dr;
       if (nf < 0 || nf > 7 || nr < 0 || nr > 7) continue;
-      const target = bAt(board, nr * 8 + nf);
+      const idx = nr * 8 + nf;
+      if (enemyPawnAttacks.has(idx)) continue;
+      const target = bAt(board, idx);
       if (!target || getColorOf(target) !== pieceColor) mobility++;
     }
     bonus += mobility * MOBILITY_KNIGHT;
@@ -949,13 +1086,16 @@ function evaluateMobility(
       let f = (idx % 8) + df;
       let r = Math.floor(idx / 8) + dr;
       while (f >= 0 && f <= 7 && r >= 0 && r <= 7) {
-        const target = bAt(board, r * 8 + f);
-        if (!target) {
-          mobility++;
-        } else {
-          if (getColorOf(target) !== pieceColor) mobility++;
-          break;
+        const idx = r * 8 + f;
+        const target = bAt(board, idx);
+        if (!enemyPawnAttacks.has(idx)) {
+          if (!target) {
+            mobility++;
+          } else {
+            if (getColorOf(target) !== pieceColor) mobility++;
+          }
         }
+        if (target) break;
         f += df;
         r += dr;
       }
@@ -978,13 +1118,16 @@ function evaluateMobility(
       let f = (idx % 8) + df;
       let r = Math.floor(idx / 8) + dr;
       while (f >= 0 && f <= 7 && r >= 0 && r <= 7) {
-        const target = bAt(board, r * 8 + f);
-        if (!target) {
-          mobility++;
-        } else {
-          if (getColorOf(target) !== pieceColor) mobility++;
-          break;
+        const idx = r * 8 + f;
+        const target = bAt(board, idx);
+        if (!enemyPawnAttacks.has(idx)) {
+          if (!target) {
+            mobility++;
+          } else {
+            if (getColorOf(target) !== pieceColor) mobility++;
+          }
         }
+        if (target) break;
         f += df;
         r += dr;
       }
@@ -1121,4 +1264,38 @@ function evaluateKingPasserProximity(
   }
 
   return bonus;
+}
+
+function evaluateKingTropism(
+  kingIndex: number,
+  enemyKnights: number[],
+  enemyBishops: number[],
+  enemyRooks: number[],
+  enemyQueens: number[],
+  kingColor: Color,
+  evalColor: Color,
+): number {
+  if (kingIndex < 0) return 0;
+  let penalty = 0;
+  const kf = kingIndex % 8;
+  const kr = Math.floor(kingIndex / 8);
+
+  const addTropism = (pieces: number[], weight: number) => {
+    for (const idx of pieces) {
+      const f = idx % 8;
+      const r = Math.floor(idx / 8);
+      const dist = Math.max(Math.abs(kf - f), Math.abs(kr - r));
+      if (dist <= 4) {
+        penalty += (5 - dist) * weight;
+      }
+    }
+  };
+
+  addTropism(enemyKnights, 2);
+  addTropism(enemyBishops, 2);
+  addTropism(enemyRooks, 3);
+  addTropism(enemyQueens, 5);
+
+  const sign = kingColor === evalColor ? 1 : -1;
+  return -penalty * sign;
 }

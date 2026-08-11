@@ -147,6 +147,25 @@
   outline: none;
 }
 
+/* Match vd3's theme toggle to the borderless header icon buttons. */
+.header-right .vd-theme-switcher-toggle {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+}
+
+.header-right .vd-theme-switcher-toggle:hover,
+.header-right .vd-theme-switcher-toggle:focus-visible {
+  background: var(--vd-bg-secondary);
+  color: var(--color-primary);
+  border-color: transparent;
+  outline: none;
+}
+
 .mobile-menu-toggle {
   display: none;
 }
@@ -244,6 +263,10 @@
   flex-direction: column;
   gap: 0.85rem;
   width: 100%;
+}
+
+.strength-controls .uncapped-switch {
+  margin-top: 1rem;
 }
 
 .segmented.vd-btn-group {

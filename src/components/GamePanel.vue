@@ -78,6 +78,8 @@ const thinkTimeMaxSec = Math.round(MAX_THINK_TIME_MS / 1000);
       />
       <VdSwitch
         id="uncapped-switch"
+        class="uncapped-switch"
+        size="sm"
         label="Uncapped Spindrift strength"
         :model-value="settings.uncapped"
         @update:model-value="(v) => store.setUncapped(Boolean(v))"

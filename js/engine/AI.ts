@@ -38,6 +38,19 @@
 import { oppositeColor, cloneBoard } from "./Board.js";
 import { generateLegalMoves, generateCaptureMoves, isInCheck } from "./Rules.js";
 import { evaluate } from "./Evaluator.js";
+
+const LMR_TABLE: Int8Array[] = [];
+for (let d = 0; d < 64; d++) {
+  const row = new Int8Array(64);
+  for (let m = 0; m < 64; m++) {
+    if (d >= 1 && m >= 1) {
+      row[m] = Math.max(1, Math.floor((Math.log(d) * Math.log(m + 1)) / 2.5));
+    } else {
+      row[m] = 0;
+    }
+  }
+  LMR_TABLE.push(row);
+}
 import type {
   Board,
   BoardSquare,
@@ -205,6 +218,7 @@ interface UndoEntry {
   halfmoveClock: number;
   fullmoveNumber: number;
   pieces: UndoPiece[];
+  nonPawnPieceCount: number;
 }
 
 export type SearchBaseState = Omit<RulesState, "board"> & {
@@ -224,6 +238,8 @@ export class SearchState {
   pathHashes: bigint[];
   hash: bigint;
   generateLegalMoveCount: (color: Color) => number;
+  nullUndoStack: { hash: bigint; activeColor: Color; enPassantTarget: Square | null }[];
+  nonPawnPieceCount: number;
 
   constructor(baseState: SearchBaseState) {
     if (!baseState || !baseState.board) {
@@ -257,6 +273,13 @@ export class SearchState {
     // Compute initial Zobrist hash
     this.hash = _computeZobristHash(this);
 
+    this.nullUndoStack = [];
+    this.nonPawnPieceCount = 0;
+    for (let i = 0; i < 64; i++) {
+      const p = this.board[i];
+      if (p && p[1] !== "P") this.nonPawnPieceCount++;
+    }
+
     // Mobility callback
     this.generateLegalMoveCount = (color) =>
       generateLegalMoves({
@@ -279,6 +302,8 @@ export class SearchState {
     s.undoStack = [];
     s.pathHashes = this.pathHashes.slice();
     s.generateLegalMoveCount = this.generateLegalMoveCount;
+    s.nullUndoStack = [];
+    s.nonPawnPieceCount = this.nonPawnPieceCount;
     return s;
   }
 
@@ -297,6 +322,7 @@ export class SearchState {
       halfmoveClock: this.halfmoveClock,
       fullmoveNumber: this.fullmoveNumber,
       pieces: [],
+      nonPawnPieceCount: this.nonPawnPieceCount,
     };
 
     const fromIndex = algebraicToIndexFast(move.from);
@@ -342,6 +368,7 @@ export class SearchState {
     if (move.captured) {
       const capPi = PIECE_INDEX[move.captured];
       if (capPi !== undefined) this.hash ^= ZOBRIST_PIECES[capPi]![toIndex]!;
+      if (move.captured[1] !== "P") this.nonPawnPieceCount--;
     }
 
     // En passant capture
@@ -400,6 +427,7 @@ export class SearchState {
     if (move.promotion) {
       const prefix = mover === "white" ? "w" : "b";
       placedPiece = `${prefix}${move.promotion}` as Piece;
+      this.nonPawnPieceCount++;
     } else {
       placedPiece = movingPiece;
     }
@@ -463,11 +491,37 @@ export class SearchState {
     this.enPassantTarget = undo.enPassantTarget;
     this.halfmoveClock = undo.halfmoveClock;
     this.fullmoveNumber = undo.fullmoveNumber;
+    this.nonPawnPieceCount = undo.nonPawnPieceCount;
 
     // Restore all pieces
     for (const piece of undo.pieces) {
       this.board[piece.index] = piece.value;
     }
+  }
+
+  makeNullMove(): void {
+    this.nullUndoStack.push({
+      hash: this.hash,
+      activeColor: this.activeColor,
+      enPassantTarget: this.enPassantTarget,
+    });
+    if (this.enPassantTarget) {
+      const oldFile = this.enPassantTarget.charCodeAt(0) - 97;
+      if (oldFile >= 0 && oldFile < 8) this.hash ^= ZOBRIST_EP_FILE[oldFile]!;
+      this.enPassantTarget = null;
+    }
+    this.hash ^= ZOBRIST_SIDE;
+    this.activeColor = this.activeColor === "white" ? "black" : "white";
+    this.pathHashes.push(this.hash);
+  }
+
+  undoNullMove(): void {
+    const undo = this.nullUndoStack.pop();
+    if (!undo) return;
+    this.pathHashes.pop();
+    this.hash = undo.hash;
+    this.activeColor = undo.activeColor;
+    this.enPassantTarget = undo.enPassantTarget;
   }
 }
 
@@ -512,6 +566,7 @@ function applyMoveSearch(state: SearchState, move: Move, mover: Color): void {
   if (move.captured) {
     const capPi = PIECE_INDEX[move.captured];
     if (capPi !== undefined) state.hash ^= ZOBRIST_PIECES[capPi]![toIndex]!;
+    if (move.captured[1] !== "P") state.nonPawnPieceCount--;
   }
 
   // En passant capture
@@ -565,6 +620,7 @@ function applyMoveSearch(state: SearchState, move: Move, mover: Color): void {
   if (move.promotion) {
     const prefix = mover === "white" ? "w" : "b";
     placedPiece = `${prefix}${move.promotion}` as Piece;
+    state.nonPawnPieceCount++;
   } else {
     placedPiece = movingPiece;
   }
@@ -828,16 +884,13 @@ const TT_LOWER = 1;
 const TT_UPPER = 2;
 
 /** Default transposition table size */
-const TT_MAX_SIZE_DEFAULT = 100000;
+const TT_MAX_SIZE_DEFAULT = 131072;
 /** Larger transposition table for Level 6 */
-const TT_MAX_SIZE_L6 = 500000;
+const TT_MAX_SIZE_L6 = 524288;
 
 /** Evaluation cache size (entries) and BigInt mask for indexing. */
 const EVAL_CACHE_SIZE = 1 << 16;
 const EVAL_CACHE_MASK = 65535n;
-
-/** Null move reduction depth */
-const NULL_MOVE_REDUCTION = 3;
 
 /**
  * Deepest iterative-deepening iteration allowed in uncapped (match) mode.
@@ -850,10 +903,18 @@ const UNCAPPED_MAX_DEPTH = 56;
 const ENDGAME_PIECE_THRESHOLD = 7;
 
 /** Futility pruning margins by depth (centipawns) */
-const FUTILITY_MARGINS = [0, 200, 500, 900];
+const FUTILITY_MARGINS = [0, 200, 500, 900, 1200, 1500];
 
 /** Reverse futility pruning margins by depth (centipawns) */
-const RFP_MARGINS = [0, 120, 300, 500];
+const RFP_MARGINS = [0, 120, 300, 500, 700, 900];
+const LMP_THRESHOLDS = [0, 5, 8, 13, 20];
+
+/** Singular extension margin (centipawns). If the TT move's score exceeds all
+ *  alternatives by at least this margin in a reduced verification search, the
+ *  TT move is extended by 1 ply. */
+const SE_MARGIN = 50;
+/** Minimum depth to attempt singular extensions. */
+const SE_MIN_DEPTH = 8;
 
 interface TTEntry {
   key: bigint;
@@ -913,8 +974,10 @@ export class AI {
   historyTable: number[][];
   counterMoves: Array<Array<KillerSlot | null>>;
   ttSize: number;
+  ttMask: bigint;
   transpositionTable: Array<TTEntry | undefined>;
   evalCache: Array<EvalCacheEntry | undefined>;
+  orderScores: Float64Array;
   lastSearchInfo: SearchInfo;
   lastRootScore: number | undefined;
   timeCheckCtr: number = 0;
@@ -970,12 +1033,15 @@ export class AI {
 
     // Transposition table - default size, resized for Level 6
     this.ttSize = TT_MAX_SIZE_DEFAULT;
+    this.ttMask = BigInt(TT_MAX_SIZE_DEFAULT - 1);
     this.transpositionTable = new Array(TT_MAX_SIZE_DEFAULT);
 
     // Evaluation cache (levels 4-6): Zobrist-keyed memo for the full static
     // eval. Eval is a pure function of the position, so cached scores are
     // identical to recomputation — this only saves time. Kept across moves.
     this.evalCache = new Array(EVAL_CACHE_SIZE);
+
+    this.orderScores = new Float64Array(256);
 
     this.lastSearchInfo = this.createSearchInfo();
     this.lastRootScore = undefined;
@@ -1045,6 +1111,7 @@ export class AI {
     const targetSize = level >= 6 ? TT_MAX_SIZE_L6 : TT_MAX_SIZE_DEFAULT;
     if (this.ttSize !== targetSize) {
       this.ttSize = targetSize;
+      this.ttMask = BigInt(targetSize - 1);
       this.transpositionTable = new Array(targetSize);
     }
   }
@@ -1073,18 +1140,18 @@ export class AI {
     const idx = Number(state.hash & EVAL_CACHE_MASK);
     const hit = this.evalCache[idx];
     if (hit && hit.key === state.hash) return hit.score;
-    const score = evaluate(state, rootColor);
+    // Compute pawn-only Zobrist hash for the pawn structure cache in Evaluator.
+    // Scanning up to 16 pawns is far cheaper than the full 64-square eval.
+    let pawnHash = 0n;
+    const b = state.board;
+    for (let sq = 0; sq < 64; sq++) {
+      const p = b[sq];
+      if (p === "wP") pawnHash ^= ZOBRIST_PIECES[0]![sq]!;
+      else if (p === "bP") pawnHash ^= ZOBRIST_PIECES[6]![sq]!;
+    }
+    const score = evaluate(state, rootColor, pawnHash);
     this.evalCache[idx] = { key: state.hash, score };
     return score;
-  }
-
-  countPieces(board: Board): number {
-    let count = 0;
-    for (let i = 0; i < 64; i++) {
-      const piece = bAt(board, i);
-      if (piece && piece[1] !== "P") count++;
-    }
-    return count;
   }
 
   storeKillerMove(move: Move, depth: number): void {
@@ -1179,17 +1246,30 @@ export class AI {
     board: Board | null = null,
     level = 1,
   ): Move[] {
-    const decorated = new Array(moves.length);
-    for (let i = 0; i < moves.length; i++) {
-      decorated[i] = {
-        move: moves[i],
-        score: this.scoreMoveForOrdering(moves[i], depth, ttBestMove, counterMove, board, level),
-      };
+    const len = moves.length;
+    for (let i = 0; i < len; i++) {
+      this.orderScores[i] = this.scoreMoveForOrdering(
+        moves[i]!,
+        depth,
+        ttBestMove,
+        counterMove,
+        board,
+        level,
+      );
     }
-    decorated.sort((a, b) => b.score - a.score);
-    const ordered = new Array(moves.length);
-    for (let i = 0; i < moves.length; i++) ordered[i] = decorated[i].move;
-    return ordered;
+    for (let i = 1; i < len; i++) {
+      const keyMove = moves[i]!;
+      const keyScore = this.orderScores[i]!;
+      let j = i - 1;
+      while (j >= 0 && this.orderScores[j]! < keyScore) {
+        moves[j + 1] = moves[j]!;
+        this.orderScores[j + 1] = this.orderScores[j]!;
+        j--;
+      }
+      moves[j + 1] = keyMove;
+      this.orderScores[j + 1] = keyScore;
+    }
+    return moves;
   }
 
   /**
@@ -1208,7 +1288,7 @@ export class AI {
   }
 
   probeTable(key: bigint, depth: number, alpha: number, beta: number, ply: number): number | null {
-    const index = Number(key % BigInt(this.ttSize));
+    const index = Number(key & this.ttMask);
     const entry = this.transpositionTable[index];
 
     if (!entry || entry.key !== key || entry.depth < depth) return null;
@@ -1235,10 +1315,26 @@ export class AI {
    * Probe TT for best move only (even if depth insufficient for score).
    */
   probeTTMove(key: bigint): Move | null {
-    const index = Number(key % BigInt(this.ttSize));
+    const index = Number(key & this.ttMask);
     const entry = this.transpositionTable[index];
     if (!entry || entry.key !== key) return null;
     return entry.bestMove || null;
+  }
+
+  /**
+   * Probe TT for the raw entry data needed by singular extensions.
+   * Returns {score, depth, flag} if the entry exists, null otherwise.
+   * The score is converted back to root-relative.
+   */
+  probeTTRaw(key: bigint, ply: number): { score: number; depth: number; flag: number } | null {
+    const index = Number(key & this.ttMask);
+    const entry = this.transpositionTable[index];
+    if (!entry || entry.key !== key) return null;
+    return {
+      score: mateFromTT(entry.score, ply),
+      depth: entry.depth,
+      flag: entry.flag,
+    };
   }
 
   storeTable(
@@ -1252,7 +1348,7 @@ export class AI {
     // Never store a non-finite or otherwise corrupt score (e.g. an aborted
     // quiescence sentinel) — it would poison every later probe of this key.
     if (!Number.isFinite(score)) return;
-    const index = Number(key % BigInt(this.ttSize));
+    const index = Number(key & this.ttMask);
     const existing = this.transpositionTable[index];
 
     // Replace colliding keys, or refresh equal/deeper entries for the same key.
@@ -1557,13 +1653,16 @@ export class AI {
     moveIndex: number,
     move: Move,
     inCheck: boolean,
+    historyScore: number,
   ): number {
     if (inCheck || move.captured || move.promotion || move.isEnPassant) return 0;
-    if (this.isKillerMove(move, depth) || this.getHistoryScore(move) > 500) return 0;
+    if (this.isKillerMove(move, depth) || historyScore > 500) return 0;
 
     if (level >= 6 && depth >= 3 && moveIndex >= 3) {
-      const reduction = Math.max(1, Math.floor((Math.log(depth) * Math.log(moveIndex + 1)) / 2.5));
-      return Math.min(reduction, depth - 2);
+      let reduction = LMR_TABLE[depth]![moveIndex]!;
+      if (historyScore > 2000) reduction -= 1;
+      if (historyScore < -2000) reduction += 1;
+      return Math.min(Math.max(1, reduction), depth - 2);
     }
     if (level >= 5 && depth >= 3 && moveIndex >= 4) {
       return moveIndex >= 8 ? 2 : 1;
@@ -1666,7 +1765,7 @@ export class AI {
 
     // Static eval is only consumed by the level-6 shallow-depth RFP and futility
     // pruning; compute it lazily so levels 4-5 don't pay for it at every node.
-    const needStaticEval = level >= 6 && !inCheck && depth <= 3;
+    const needStaticEval = level >= 4 && !inCheck && depth <= 5;
     const staticEval = needStaticEval ? this.evalCached(state, rootColor) : 0;
 
     if (needStaticEval && allowNullMove) {
@@ -1680,20 +1779,13 @@ export class AI {
       !inCheck &&
       depth >= 3 &&
       level >= 4 &&
-      this.countPieces(state.board) >= ENDGAME_PIECE_THRESHOLD
+      state.nonPawnPieceCount >= ENDGAME_PIECE_THRESHOLD
     ) {
-      const nullState = state.clone();
-      nullState.hash ^= ZOBRIST_SIDE;
-      nullState.activeColor = oppositeColor(nullState.activeColor);
-      if (nullState.enPassantTarget) {
-        const epFile = nullState.enPassantTarget.charCodeAt(0) - 97;
-        if (epFile >= 0 && epFile < 8) nullState.hash ^= ZOBRIST_EP_FILE[epFile]!;
-      }
-      nullState.enPassantTarget = null;
+      state.makeNullMove();
 
-      const nullDepth = Math.max(0, depth - 1 - NULL_MOVE_REDUCTION);
+      const nullDepth = Math.max(0, depth - 1 - AI.NULL_MOVE_REDUCTION);
       const nullScore = this.minimax(
-        nullState,
+        state,
         nullDepth,
         alpha,
         beta,
@@ -1705,6 +1797,7 @@ export class AI {
         false,
         ply + 1,
       );
+      state.undoNullMove();
       if (nullScore !== null) {
         if (maximizing && nullScore >= beta) {
           this.lastSearchInfo.cutoffs += 1;
@@ -1718,7 +1811,7 @@ export class AI {
     }
 
     let canFutilityPrune = false;
-    if (level >= 6 && !inCheck && depth <= 3) {
+    if (level >= 4 && !inCheck && depth <= 5) {
       const margin = FUTILITY_MARGINS[depth] || 0;
       canFutilityPrune = maximizing ? staticEval + margin <= alpha : staticEval - margin >= beta;
     }
@@ -1733,24 +1826,96 @@ export class AI {
 
     if (maximizing) {
       let value = -Infinity;
+      const searchedQuiets: Move[] = [];
       for (let i = 0; i < ordered.length; i++) {
         if (i % 10 === 0 && this.isTimeUp(timeout, startTime)) {
           this.lastSearchInfo.timedOut = true;
           return null;
         }
 
-        const move = ordered[i];
+        const move = ordered[i]!;
         if (canFutilityPrune && i > 0 && !move.captured && !move.promotion && !move.isEnPassant)
           continue;
 
-        const reduction = this.computeReduction(level, depth, i, move, inCheck);
+        if (
+          depth <= 4 &&
+          level >= 4 &&
+          !inCheck &&
+          i >= (LMP_THRESHOLDS[depth] || 20) &&
+          !move.captured &&
+          !move.promotion &&
+          !move.isEnPassant &&
+          !this.isKillerMove(move, depth)
+        )
+          continue;
+
+        if (!move.captured && !move.promotion && !move.isEnPassant) {
+          searchedQuiets.push(move);
+        }
+
+        const historyScore = this.getHistoryScore(move);
+        const reduction = this.computeReduction(level, depth, i, move, inCheck, historyScore);
+
+        // Singular extension (level >= 6, depth >= SE_MIN_DEPTH): if the TT move
+        // is singular (significantly better than all alternatives), extend it by
+        // 1 ply so the engine doesn't miss critical forced lines.
+        let extension = 0;
+        if (
+          i === 0 &&
+          maximizing &&
+          level >= 6 &&
+          depth >= SE_MIN_DEPTH &&
+          ttBestMove &&
+          move.from === ttBestMove.from &&
+          move.to === ttBestMove.to &&
+          ttKey
+        ) {
+          const ttRaw = this.probeTTRaw(ttKey, ply);
+          if (
+            ttRaw &&
+            ttRaw.depth >= depth - 3 &&
+            (ttRaw.flag === TT_LOWER || ttRaw.flag === TT_EXACT) &&
+            Math.abs(ttRaw.score) < MATE_THRESHOLD
+          ) {
+            const seBeta = ttRaw.score - SE_MARGIN;
+            // Quick reduced search of alternatives: if any scores >= seBeta,
+            // the TT move is not singular.
+            let singular = true;
+            const seDepth = Math.max(1, Math.floor(depth / 2) - 1);
+            for (let si = 1; si < ordered.length && singular; si++) {
+              const seMove = ordered[si]!;
+              state.makeMove(seMove);
+              const seScore = this.minimax(
+                state,
+                seDepth,
+                seBeta - 1,
+                seBeta,
+                rootColor,
+                false,
+                level,
+                timeout,
+                startTime,
+                false,
+                ply + 1,
+              );
+              state.undoMove();
+              if (seScore === null) {
+                singular = false;
+                break;
+              }
+              if (seScore >= seBeta) singular = false;
+            }
+            if (singular) extension = 1;
+          }
+        }
+
         state.makeMove(move);
         let child;
         if (i === 0) {
           // First (principal variation) move: full window at full depth.
           child = this.minimax(
             state,
-            depth - 1,
+            depth - 1 + extension,
             alpha,
             beta,
             rootColor,
@@ -1807,6 +1972,18 @@ export class AI {
           this.storeKillerMove(move, depth);
           if (level >= 4) this.storeCounterMove(lastMove, move);
           this.updateHistory(move, depth);
+          if (!move.captured && !move.promotion && !move.isEnPassant) {
+            for (let j = 0; j < searchedQuiets.length; j++) {
+              const q = searchedQuiets[j]!;
+              if (q !== move) {
+                const fIdx = algebraicToIndexFast(q.from);
+                const tIdx = algebraicToIndexFast(q.to);
+                this.historyTable[fIdx]![tIdx]! -= depth * depth;
+                if (this.historyTable[fIdx]![tIdx]! < -10000)
+                  this.historyTable[fIdx]![tIdx]! = -10000;
+              }
+            }
+          }
           break;
         }
       }
@@ -1821,17 +1998,35 @@ export class AI {
     }
 
     let value = Infinity;
+    const searchedQuiets: Move[] = [];
     for (let i = 0; i < ordered.length; i++) {
       if (timeout && startTime && i % 10 === 0 && Date.now() - startTime >= timeout) {
         this.lastSearchInfo.timedOut = true;
         return null;
       }
 
-      const move = ordered[i];
+      const move = ordered[i]!;
       if (canFutilityPrune && i > 0 && !move.captured && !move.promotion && !move.isEnPassant)
         continue;
 
-      const reduction = this.computeReduction(level, depth, i, move, inCheck);
+      if (
+        depth <= 4 &&
+        level >= 4 &&
+        !inCheck &&
+        i >= (LMP_THRESHOLDS[depth] || 20) &&
+        !move.captured &&
+        !move.promotion &&
+        !move.isEnPassant &&
+        !this.isKillerMove(move, depth)
+      )
+        continue;
+
+      if (!move.captured && !move.promotion && !move.isEnPassant) {
+        searchedQuiets.push(move);
+      }
+
+      const historyScore = this.getHistoryScore(move);
+      const reduction = this.computeReduction(level, depth, i, move, inCheck, historyScore);
       state.makeMove(move);
       let child;
       if (i === 0) {
@@ -1892,6 +2087,18 @@ export class AI {
         this.storeKillerMove(move, depth);
         if (level >= 4) this.storeCounterMove(lastMove, move);
         this.updateHistory(move, depth);
+        if (!move.captured && !move.promotion && !move.isEnPassant) {
+          for (let j = 0; j < searchedQuiets.length; j++) {
+            const q = searchedQuiets[j]!;
+            if (q !== move) {
+              const fIdx = algebraicToIndexFast(q.from);
+              const tIdx = algebraicToIndexFast(q.to);
+              this.historyTable[fIdx]![tIdx]! -= depth * depth;
+              if (this.historyTable[fIdx]![tIdx]! < -10000)
+                this.historyTable[fIdx]![tIdx]! = -10000;
+            }
+          }
+        }
         break;
       }
     }
