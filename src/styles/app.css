@@ -257,6 +257,23 @@
   outline: none;
 }
 
+/* Remap vd3's regular Phosphor icons to app-wide Phosphor Bold. */
+.header-right .vd-theme-switcher-toggle .ph {
+  font-family: "Phosphor-Bold" !important;
+}
+
+.header-right .vd-theme-switcher-toggle .ph-desktop:before {
+  content: "\e560";
+}
+
+.header-right .vd-theme-switcher-toggle .ph-sun:before {
+  content: "\e472";
+}
+
+.header-right .vd-theme-switcher-toggle .ph-moon:before {
+  content: "\e330";
+}
+
 .mobile-menu-toggle {
   display: none;
 }
