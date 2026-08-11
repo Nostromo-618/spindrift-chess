@@ -24,9 +24,36 @@ export interface ChangelogEntry {
 /** Spindrift Chess release notes. */
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: "v1.1.0",
+    date: "August 11, 2026",
+    latest: true,
+    columns: [
+      {
+        title: "Engine Optimizations",
+        groups: [
+          {
+            title: "1.1.0",
+            items: [
+              {
+                icon: "ph-lightning",
+                title: "Engine Speed & Efficiency",
+                body: "Pre-computed LMR lookup table, in-place null-move search, zero-allocation insertion move ordering, power-of-2 bitmask TT indexing, and 8K-entry pawn structure cache yield ~21% faster deep searches.",
+              },
+              {
+                icon: "ph-brain",
+                title: "Enhanced Engine Strength",
+                body: "Singular Extensions, Reverse Futility Pruning expansion, Late Move Pruning, quiet history malus, history-adjusted LMR, and enhanced evaluation (safe mobility, backward pawns, king tropism).",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "v1.0.0",
     date: "August 10, 2026",
-    latest: true,
+    latest: false,
     columns: [
       {
         title: "Spindrift Chess",
