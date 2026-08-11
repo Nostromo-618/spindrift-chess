@@ -26,9 +26,46 @@ export type ChangelogLocale = "en" | "lt";
 /** Spindrift Chess release notes (English). */
 export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
-    version: "v1.1.0",
+    version: "v1.2.0",
     date: "August 11, 2026",
     latest: true,
+    columns: [
+      {
+        title: "Internationalisation & UI",
+        groups: [
+          {
+            title: "1.2.0",
+            items: [
+              {
+                icon: "ph-translate",
+                title: "English & Lithuanian",
+                body: "Full UI translation via a lightweight useI18n() composable. Locale persists under sdc-locale. The brand name Spindrift is never translated.",
+              },
+              {
+                icon: "ph-globe",
+                title: "Locale switcher",
+                body: "Header EN/LT segmented control with inline SVG flags and a sliding primary thumb.",
+              },
+              {
+                icon: "ph-paint-roller",
+                title: "Translated theme customizer",
+                body: "App-owned theme customizer with EN/LT labels, reusing vd3 theme preference APIs.",
+              },
+              {
+                icon: "ph-trophy",
+                title: "Game-end icons",
+                body: "Checkmate, resignation, draw, and stalemate use tone-coloured Phosphor bold icons instead of emoji.",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: "v1.1.0",
+    date: "August 11, 2026",
+    latest: false,
     columns: [
       {
         title: "Engine Optimizations",
@@ -89,9 +126,46 @@ export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
 /** Spindrift Chess release notes (Lithuanian). */
 export const LT_CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
-    version: "v1.1.0",
+    version: "v1.2.0",
     date: "2026 m. rugpjūčio 11 d.",
     latest: true,
+    columns: [
+      {
+        title: "Internacionalizacija ir sąsaja",
+        groups: [
+          {
+            title: "1.2.0",
+            items: [
+              {
+                icon: "ph-translate",
+                title: "Anglų ir lietuvių kalbos",
+                body: "Visa sąsaja verčiama per lengvą useI18n() kompozabilą. Lokalė saugoma po sdc-locale. Prekės ženklas Spindrift niekada neverčiamas.",
+              },
+              {
+                icon: "ph-globe",
+                title: "Kalbos perjungiklis",
+                body: "Antraštės EN/LT segmentuotas valdiklis su SVG vėliavomis ir slystančiu pagrindinės spalvos pirštu.",
+              },
+              {
+                icon: "ph-paint-roller",
+                title: "Išverstas temos tinkintuvas",
+                body: "Programos temos tinkintuvas su EN/LT etiketėmis, naudojant vd3 temos nuostatų API.",
+              },
+              {
+                icon: "ph-trophy",
+                title: "Žaidimo pabaigos ikonos",
+                body: "Matas, pasidavimas, lygiosios ir patas naudoja tonuotas Phosphor bold ikonas vietoj jaustukų.",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: "v1.1.0",
+    date: "2026 m. rugpjūčio 11 d.",
+    latest: false,
     columns: [
       {
         title: "Variklio optimizavimai",
