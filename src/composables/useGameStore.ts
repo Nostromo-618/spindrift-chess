@@ -6,6 +6,7 @@
  * `BoardView` island. Module-scope singleton shared by every component.
  */
 import { reactive, ref, computed, type Ref, type ComputedRef } from "vue";
+import { useToast } from "@vanduo-oss/vd3";
 import { Game, type ColorChoice, type GameSnapshot, type PromotionPiece } from "../../js/Game.js";
 import {
   getDisclaimerAccepted,
@@ -76,10 +77,12 @@ export interface GameStore {
   boardSizeSlider: Ref<number>;
   gameEndResult: Ref<GameEndPayload | null>;
   canUndo: ComputedRef<boolean>;
+  /** True when New Game would discard at least one played (or restored) move. */
+  needsNewGameConfirm: ComputedRef<boolean>;
   attachBoard: (instance: BoardView) => void;
   detachBoard: () => void;
   restore: () => Promise<void>;
-  newGame: () => Promise<void>;
+  newGame: () => Promise<boolean>;
   handleSquareSelected: (square: string) => void;
   handlePromotionPicked: (piece: PromotionPiece) => void;
   handlePromotionCancelled: () => void;
@@ -262,7 +265,7 @@ function createGameStore(): GameStore {
     }
   }
 
-  async function initializeGame(): Promise<void> {
+  async function initializeGame(): Promise<boolean> {
     clearGame();
     setDifficulty(settings.difficulty);
     persistUncapped(settings.uncapped);
@@ -293,9 +296,11 @@ function createGameStore(): GameStore {
           if (game.getCurrentTurn() !== game.getPlayerColor()) void triggerAIMove();
         });
       }
+      return true;
     } catch (error) {
       console.error("Game initialization error:", error);
       status.text = getT().app.initError;
+      return false;
     }
   }
 
@@ -330,9 +335,11 @@ function createGameStore(): GameStore {
     }
   }
 
-  async function newGame(): Promise<void> {
-    if (isProcessingMove) return;
-    await initializeGame();
+  async function newGame(): Promise<boolean> {
+    if (isProcessingMove) return false;
+    const started = await initializeGame();
+    if (started) useToast().info(getT().game.newGameStarted);
+    return started;
   }
 
   function handleSquareSelected(square: string): void {
@@ -446,6 +453,13 @@ function createGameStore(): GameStore {
     return game.canUndo();
   });
 
+  const needsNewGameConfirm = computed(() => {
+    void history.value;
+    void gameEndResult.value;
+    if (!game || game.isGameOver()) return false;
+    return history.value.length > 0;
+  });
+
   function undoLastMove(): void {
     if (!game || !canUndo.value) return;
     pendingPromotion = null;
@@ -524,6 +538,7 @@ function createGameStore(): GameStore {
     boardSizeSlider,
     gameEndResult,
     canUndo,
+    needsNewGameConfirm,
     attachBoard,
     detachBoard,
     restore,

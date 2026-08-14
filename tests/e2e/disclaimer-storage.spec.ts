@@ -170,6 +170,8 @@ test.describe("LocalStorage: Game Progress", () => {
     );
 
     await page.click("#new-game-btn");
+    await expect(page.locator("#new-game-confirm-modal")).toBeVisible();
+    await page.click("#new-game-confirm-btn");
     await page.waitForSelector('.chess-piece[data-piece="wP"]');
 
     const saved = await page.evaluate(() => localStorage.getItem("sdc-game"));

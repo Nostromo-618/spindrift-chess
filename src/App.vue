@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /** App shell: header, board + control panel, dialogs, theme customizer. */
 import { onMounted, watch } from "vue";
-import { useThemePreference } from "@vanduo-oss/vd3";
+import { useThemePreference, VdToastContainer } from "@vanduo-oss/vd3";
 import AppHeader from "./components/AppHeader.vue";
 import BoardPanel from "./components/BoardPanel.vue";
 import GamePanel from "./components/GamePanel.vue";
 import GameEndModal from "./components/modals/GameEndModal.vue";
+import NewGameConfirmModal from "./components/modals/NewGameConfirmModal.vue";
 import DisclaimerModal from "./components/modals/DisclaimerModal.vue";
 import ChangelogModal from "./components/modals/ChangelogModal.vue";
 import AppThemeCustomizer from "./components/AppThemeCustomizer.vue";
@@ -45,8 +46,10 @@ watch(locale, () => {
     </main>
 
     <GameEndModal />
+    <NewGameConfirmModal />
     <DisclaimerModal />
     <ChangelogModal />
+    <VdToastContainer />
     <!-- Spindrift Chess sticks to the Open Color palette, so the palette
          selector (Open Color / Fibonacci) is hidden. -->
     <AppThemeCustomizer />

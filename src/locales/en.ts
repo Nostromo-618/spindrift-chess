@@ -49,15 +49,21 @@ export const EN: TranslationMap = {
   },
   game: {
     newGame: "New Game",
+    newGameStarted: "New game started",
     undo: "Undo",
     undoTitle: "Take back your last move and the computer's reply",
-    settings: "Game Settings",
     playAs: "Play as",
-    uncapped: "Uncapped Spindrift strength",
+    uncapped: "Uncapped computer strength",
     uncappedNote: "Thinks as deep as time allows (up to 56 ply).",
     thinkTime: ({ sec }) => `Thinking time (${sec}s)`,
     strengthChangeNote:
       "Strength changes apply to your current game; color takes effect on your next New Game.",
+  },
+  newGameConfirm: {
+    title: "Start a new game?",
+    message: "Current progress will be lost.",
+    confirm: "Start new game",
+    cancel: "Cancel",
   },
   gameEnd: {
     close: "Close",
@@ -93,6 +99,11 @@ export const EN: TranslationMap = {
     label: "Move history",
     title: "Move History",
     empty: "No moves yet — start a game to see the move log.",
+    sortAsc: "Asc",
+    sortDsc: "Dsc",
+    sortAria: "Sort move history ascending or descending",
+    sortTooltipAsc: "Oldest first — ascending move history",
+    sortTooltipDsc: "Newest first — descending move history",
   },
   piece: {
     whitePawn: "White pawn",
@@ -117,7 +128,7 @@ export const EN: TranslationMap = {
   },
   engine: {
     name: "Spindrift Engine",
-    strength: "Spindrift strength",
+    strength: "Computer strength",
     level: ({ level }) => `level ${level}`,
   },
   sidePanelFooter: {

@@ -7,13 +7,24 @@ import StatusPanel from "./StatusPanel.vue";
 import MoveHistory from "./MoveHistory.vue";
 import SidePanelFooter from "./SidePanelFooter.vue";
 import { useGameStore } from "../composables/useGameStore";
+import { useModals } from "../composables/useModals";
 import { useI18n } from "../composables/useI18n";
 import { MIN_THINK_TIME_MS, MAX_THINK_TIME_MS } from "../../js/storage.js";
 import type { ColorChoice } from "../../js/Game.js";
 
 const store = useGameStore();
-const { settings, canUndo } = store;
+const { settings, canUndo, needsNewGameConfirm, status } = store;
+const modals = useModals();
 const { t } = useI18n();
+
+function onNewGameClick(): void {
+  if (status.busy) return;
+  if (needsNewGameConfirm.value) {
+    modals.openNewGameConfirm();
+    return;
+  }
+  void store.newGame();
+}
 
 const colorOptions = computed(() => [
   { value: "white" as ColorChoice, label: t.value.color.white },
@@ -34,7 +45,8 @@ const thinkTimeMaxSec = Math.round(MAX_THINK_TIME_MS / 1000);
         variant="primary"
         class="new-game-btn"
         :ring="true"
-        @click="store.newGame()"
+        :disabled="status.busy"
+        @click="onNewGameClick"
       >
         <i class="ph-bold ph-flag-checkered" aria-hidden="true"></i>
         {{ t.game.newGame }}
@@ -53,11 +65,10 @@ const thinkTimeMaxSec = Math.round(MAX_THINK_TIME_MS / 1000);
       </VdButton>
     </div>
 
-    <h2 class="panel-heading">{{ t.game.settings }}</h2>
-
     <SegmentedControl
       id="color-choice"
       :label="t.game.playAs"
+      label-class="panel-heading"
       data-key="color"
       :options="colorOptions"
       :model-value="settings.color"
@@ -68,6 +79,7 @@ const thinkTimeMaxSec = Math.round(MAX_THINK_TIME_MS / 1000);
       <VdSlider
         v-if="!settings.uncapped"
         id="strength-slider"
+        class="strength-heading"
         :label="t.engine.strength"
         :model-value="settings.difficulty"
         :min="1"

@@ -34,6 +34,8 @@ const props = withDefaults(
     disabled?: boolean;
     /** Native tooltip shown on the (non-disabled) group wrapper while locked. */
     disabledHint?: string;
+    /** Extra class(es) for the visible label (e.g. panel-heading). */
+    labelClass?: string;
   }>(),
   {
     id: "",
@@ -44,6 +46,7 @@ const props = withDefaults(
     size: "sm",
     disabled: false,
     disabledHint: "",
+    labelClass: "",
   },
 );
 
@@ -69,7 +72,7 @@ function select(value: string | number): void {
     :class="{ 'is-locked': disabled }"
     :title="disabled && disabledHint ? disabledHint : undefined"
   >
-    <div v-if="label" :id="resolvedLabelId" class="settings-label">
+    <div v-if="label" :id="resolvedLabelId" class="settings-label" :class="labelClass || undefined">
       {{ label }}
       <i v-if="disabled" class="ph-bold ph-lock-simple settings-lock" aria-hidden="true"></i>
     </div>

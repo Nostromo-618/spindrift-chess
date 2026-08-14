@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /** Version badge (opens the changelog) + UI attribution. */
+import { version as packageVersion } from "../../package.json";
 import { useModals } from "../composables/useModals";
 import { useI18n } from "../composables/useI18n";
 
 const { openChangelog } = useModals();
 const { t } = useI18n();
-const version = `v${__APP_VERSION__}`;
+const version = `v${packageVersion}`;
 </script>
 
 <template>

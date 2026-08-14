@@ -48,15 +48,21 @@ export const LT: TranslationMap = {
   },
   game: {
     newGame: "Naujas žaidimas",
+    newGameStarted: "Naujas žaidimas pradėtas",
     undo: "Atšaukti",
     undoTitle: "Atšaukti paskutinį savo ėjimą ir kompiuterio atsakymą",
-    settings: "Žaidimo nustatymai",
     playAs: "Žaisti kaip",
-    uncapped: "Spindrift stiprumas be apribojimų",
+    uncapped: "Kompiuterio stiprumas be apribojimų",
     uncappedNote: "Mąsto tiek giliai, kiek leidžia laikas (iki 56 pusės ėjimų).",
     thinkTime: ({ sec }) => `Mąstymo laikas (${sec}s)`,
     strengthChangeNote:
       "Stiprumo pakeitimai taikomi dabartiniam žaidimui; spalva įsigalioja kitam naujam žaidimui.",
+  },
+  newGameConfirm: {
+    title: "Pradėti naują žaidimą?",
+    message: "Dabartinė eiga bus prarasta.",
+    confirm: "Pradėti naują žaidimą",
+    cancel: "Atšaukti",
   },
   gameEnd: {
     close: "Uždaryti",
@@ -92,6 +98,11 @@ export const LT: TranslationMap = {
     label: "Ėjimų istorija",
     title: "Ėjimų istorija",
     empty: "Kol kas nėra ėjimų — pradėkite žaidimą, kad pamatytumėte ėjimų žurnalą.",
+    sortAsc: "Did.",
+    sortDsc: "Maž.",
+    sortAria: "Rikiuoti ėjimų istoriją didėjančia arba mažėjančia tvarka",
+    sortTooltipAsc: "Seniausi ėjimai pirmi (didėjančia tvarka)",
+    sortTooltipDsc: "Naujausi ėjimai pirmi (mažėjančia tvarka)",
   },
   piece: {
     whitePawn: "Baltųjų pėstininkas",
@@ -116,7 +127,7 @@ export const LT: TranslationMap = {
   },
   engine: {
     name: "Spindrift Engine", // brand - kept in English
-    strength: "Spindrift stiprumas",
+    strength: "Kompiuterio stiprumas",
     level: ({ level }) => `${level} lygis`,
   },
   sidePanelFooter: {

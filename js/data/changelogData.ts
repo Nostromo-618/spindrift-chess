@@ -26,9 +26,46 @@ export type ChangelogLocale = "en" | "lt";
 /** Spindrift Chess release notes (English). */
 export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: "v1.2.1",
+    date: "August 14, 2026",
+    latest: true,
+    columns: [
+      {
+        title: "UI polish",
+        groups: [
+          {
+            title: "1.2.1",
+            items: [
+              {
+                icon: "ph-crown",
+                title: "Piece artwork",
+                body: "Clearer king so it reads apart from a pawn; light and dark outlines aligned. Bishops lost the down-pointing mitre overlay, and the head is a bit edgier (both colours).",
+              },
+              {
+                icon: "ph-sliders-horizontal",
+                title: "Settings headings",
+                body: "The Game Settings title is gone. Play as and Computer strength (renamed from Spindrift strength) are now section headings, with a little extra space above strength.",
+              },
+              {
+                icon: "ph-flag-checkered",
+                title: "New Game",
+                body: "If a game already has moves, starting a new one asks for confirmation so progress is not lost. An info toast confirms when a new game starts.",
+              },
+              {
+                icon: "ph-list-numbers",
+                title: "Move history",
+                body: "Newest moves first by default. Switch Asc/Dsc; hover the short labels for the full description.",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "v1.2.0",
     date: "August 11, 2026",
-    latest: true,
+    latest: false,
     columns: [
       {
         title: "Internationalisation & UI",
@@ -126,9 +163,46 @@ export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
 /** Spindrift Chess release notes (Lithuanian). */
 export const LT_CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: "v1.2.1",
+    date: "2026 m. rugpjūčio 14 d.",
+    latest: true,
+    columns: [
+      {
+        title: "Sąsajos patobulinimai",
+        groups: [
+          {
+            title: "1.2.1",
+            items: [
+              {
+                icon: "ph-crown",
+                title: "Figūrų dizainas",
+                body: "Aiškesnis karalius, kad skirtųsi nuo pėstininko; sulyginti šviesių ir tamsių figūrų kontūrai. Rikiams nuimtas žemyn nukreiptas mitros sluoksnis, galva šiek tiek aštresnė (abi spalvos).",
+              },
+              {
+                icon: "ph-sliders-horizontal",
+                title: "Nustatymų antraštės",
+                body: "Nebėra atskiros nustatymų antraštės. „Žaisti kaip“ ir „Kompiuterio stiprumas“ (anksčiau Spindrift strength) dabar yra skyrių antraštės, su šiek tiek daugiau tarpų virš stiprumo.",
+              },
+              {
+                icon: "ph-flag-checkered",
+                title: "Naujas žaidimas",
+                body: "Jei žaidime jau yra ėjimų, naujas žaidimas paprašo patvirtinimo, kad eiga nebūtų prarasta. Informacinis pranešimas patvirtina, kai naujas žaidimas prasideda.",
+              },
+              {
+                icon: "ph-list-numbers",
+                title: "Ėjimų istorija",
+                body: "Pagal nutylėjimą naujausi ėjimai pirmi. Perjungiklis Did./Maž.; užveskite pelę ant trumpų etikečių visam aprašymui.",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "v1.2.0",
     date: "2026 m. rugpjūčio 11 d.",
-    latest: true,
+    latest: false,
     columns: [
       {
         title: "Internacionalizacija ir sąsaja",
