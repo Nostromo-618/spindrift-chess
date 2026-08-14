@@ -41,14 +41,20 @@ export interface TranslationMap {
   };
   game: {
     newGame: string;
+    newGameStarted: string;
     undo: string;
     undoTitle: string;
-    settings: string;
     playAs: string;
     uncapped: string;
     uncappedNote: string;
     thinkTime: (opts: { sec: number }) => string;
     strengthChangeNote: string;
+  };
+  newGameConfirm: {
+    title: string;
+    message: string;
+    confirm: string;
+    cancel: string;
   };
   gameEnd: {
     close: string;
@@ -85,6 +91,11 @@ export interface TranslationMap {
     label: string;
     title: string;
     empty: string;
+    sortAsc: string;
+    sortDsc: string;
+    sortAria: string;
+    sortTooltipAsc: string;
+    sortTooltipDsc: string;
   };
   piece: {
     whitePawn: string;

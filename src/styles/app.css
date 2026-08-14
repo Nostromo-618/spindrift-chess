@@ -342,10 +342,10 @@
   margin-bottom: 0.25rem;
 }
 
-/* Between fat (4px / 0.3rem) and vd3 default (2px / 0.25rem). */
+/* A little thicker than 2.75px / 0.22rem; still short of fat (4px / 0.3rem). */
 .new-game-action .vd-btn-ring {
-  --vd-btn-ring-width: 2.75px;
-  --vd-btn-ring-gap: 0.22rem;
+  --vd-btn-ring-width: 3.5px;
+  --vd-btn-ring-gap: 0.26rem;
 }
 
 .new-game-btn.vd-btn {
@@ -370,6 +370,24 @@
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--text-secondary);
+}
+
+.settings-label.panel-heading {
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+  margin: 0.35rem 0 0;
+}
+
+.strength-controls .strength-heading .vd-form-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+  /* Match section separation so this isn’t flush with Play as above. */
+  margin-top: 0.85rem;
 }
 
 .settings-note {
@@ -496,6 +514,39 @@
   gap: 0.35rem;
 }
 
+.history-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.history-heading-row .panel-heading {
+  margin: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.history-sort-tip {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.history-sort-switch {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+  line-height: 1;
+}
+
+.history-sort-switch .vd-form-switch-label {
+  line-height: 1;
+}
+
 .move-history-empty {
   margin: 0;
   font-size: var(--font-size-sm);
@@ -569,8 +620,7 @@
 
 /* ── Move history list (from the shared entry) ─────────────────────────── */
 .move-history-list {
-  list-style: decimal;
-  list-style-position: inside;
+  list-style: none;
   padding: 0;
   margin: 0;
   font-size: var(--font-size-sm, 0.875rem);
@@ -673,6 +723,30 @@
 }
 .vd-modal:has(.game-end-tone-draw) .vd-modal-title {
   color: var(--color-primary);
+}
+
+/* ── New-game confirm modal ────────────────────────────────────────────── */
+.new-game-confirm-body {
+  text-align: center;
+}
+
+.new-game-confirm-icon {
+  font-size: 4rem;
+  line-height: 1;
+  margin-bottom: 0.75rem;
+  color: var(--vd-color-warning);
+  animation: modalIconPop 0.4s ease-out;
+}
+
+.new-game-confirm-message {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.vd-modal:has(.new-game-confirm-body) .vd-modal-title {
+  color: var(--vd-color-warning);
 }
 
 /* ── Disclaimer modal (mandatory) ──────────────────────────────────────── */
@@ -978,6 +1052,27 @@ body > .vd-theme-customizer-overlay {
   .changelog-columns {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.5rem;
+  }
+
+  /* vd3's VdToastContainer has no placement prop; each toast defaults to
+     top-right. Pin top stacks to the bottom on the stacked-board breakpoint. */
+  .vd-toast-container-top-right,
+  .vd-toast-container-top-left,
+  .vd-toast-container-top-center {
+    top: auto;
+    bottom: 0;
+  }
+
+  .vd-toast-container-top-center .vd-toast {
+    transform: translateY(100%);
+  }
+
+  .vd-toast-container-top-center .vd-toast.is-visible {
+    transform: translateY(0);
+  }
+
+  .vd-toast-container-top-center .vd-toast.is-exiting {
+    transform: translateY(100%);
   }
 }
 

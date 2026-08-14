@@ -63,12 +63,12 @@ test.describe("UI Controls", () => {
   });
 
   test.describe("Difficulty Selection", () => {
-    test("should show Spindrift strength slider (levels 1–6)", async ({ page }) => {
+    test("should show Computer strength slider (levels 1–6)", async ({ page }) => {
       const slider = page.locator("#strength-slider");
       await expect(slider).toBeVisible();
       await expect(slider).toHaveAttribute("min", "1");
       await expect(slider).toHaveAttribute("max", "6");
-      await expect(page.getByText("Spindrift strength", { exact: true })).toBeVisible();
+      await expect(page.getByText("Computer strength", { exact: true })).toBeVisible();
     });
 
     test("should default to level 3", async ({ page }) => {
@@ -85,7 +85,7 @@ test.describe("UI Controls", () => {
     test("uncapped switch reveals thinking-time slider", async ({ page }) => {
       const strengthBlock = page.locator("#difficulty-choice");
       await strengthBlock.scrollIntoViewIfNeeded();
-      await page.getByText("Uncapped Spindrift strength").click();
+      await page.getByText("Uncapped computer strength").click();
       await expect(page.locator("#strength-slider")).toHaveCount(0);
       await expect(page.locator("#think-time-slider")).toBeVisible();
       await expect(page.locator("#think-time-slider")).toHaveAttribute("min", "1");

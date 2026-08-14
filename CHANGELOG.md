@@ -5,6 +5,20 @@ All notable changes to Spindrift Chess will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-08-14
+
+### Changed
+
+- **Piece artwork**: Clearer king (enlarged collar so it reads apart from a pawn); light and dark outlines aligned. Bishops lost the down-pointing mitre overlay, and the head is a bit edgier (both colours).
+- **Settings**: Dropped the “Game Settings” title. **Play as** and **Computer strength** (renamed from Spindrift strength) are section headings, with a little extra space above strength.
+- **Move history**: Newest-first by default, with an Asc/Dsc switch and hover tooltips for the short labels.
+
+### Added
+
+- **New Game confirm**: If a game already has moves, starting a new one asks for confirmation (progress will be lost). An info toast confirms when a new game starts.
+
+---
+
 ## [1.2.0] - 2026-08-11
 
 ### Added
