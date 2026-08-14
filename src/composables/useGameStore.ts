@@ -82,7 +82,7 @@ export interface GameStore {
   attachBoard: (instance: BoardView) => void;
   detachBoard: () => void;
   restore: () => Promise<void>;
-  newGame: () => Promise<void>;
+  newGame: () => Promise<boolean>;
   handleSquareSelected: (square: string) => void;
   handlePromotionPicked: (piece: PromotionPiece) => void;
   handlePromotionCancelled: () => void;
@@ -335,10 +335,11 @@ function createGameStore(): GameStore {
     }
   }
 
-  async function newGame(): Promise<void> {
-    if (isProcessingMove) return;
+  async function newGame(): Promise<boolean> {
+    if (isProcessingMove) return false;
     const started = await initializeGame();
     if (started) useToast().info(getT().game.newGameStarted);
+    return started;
   }
 
   function handleSquareSelected(square: string): void {

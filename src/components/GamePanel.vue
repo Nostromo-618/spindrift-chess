@@ -13,11 +13,12 @@ import { MIN_THINK_TIME_MS, MAX_THINK_TIME_MS } from "../../js/storage.js";
 import type { ColorChoice } from "../../js/Game.js";
 
 const store = useGameStore();
-const { settings, canUndo, needsNewGameConfirm } = store;
+const { settings, canUndo, needsNewGameConfirm, status } = store;
 const modals = useModals();
 const { t } = useI18n();
 
 function onNewGameClick(): void {
+  if (status.busy) return;
   if (needsNewGameConfirm.value) {
     modals.openNewGameConfirm();
     return;
@@ -44,6 +45,7 @@ const thinkTimeMaxSec = Math.round(MAX_THINK_TIME_MS / 1000);
         variant="primary"
         class="new-game-btn"
         :ring="true"
+        :disabled="status.busy"
         @click="onNewGameClick"
       >
         <i class="ph-bold ph-flag-checkered" aria-hidden="true"></i>
