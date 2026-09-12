@@ -16,7 +16,6 @@ export const LT: TranslationMap = {
     menuAria: "Antraštės meniu",
     localeSwitchEn: "Perjungti į anglų",
     localeSwitchLt: "Perjungti į lietuvių",
-    localeGroup: "Kalba",
   },
   disclaimer: {
     title: "Sveiki atvykę į Spindrift Šachmatai",

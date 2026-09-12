@@ -99,27 +99,29 @@ translated, transliterated, or altered in any way.
 
 ### Requirement: Locale switcher in navbar
 
-The app header SHALL display EN/LT pill buttons that SHALL allow toggling
-between locales. The active locale SHALL be visually highlighted with the
-primary colour.
+The app header SHALL display a vd3 Mode Toggle morph control that toggles
+between English and Lithuanian. The control SHALL show the active locale with
+an inline SVG flag and an EN or LT label. The locale SHALL persist under
+`sdc-locale`.
 
 #### Scenario: Desktop layout
 
 - **WHEN** the viewport is >= 769px
-- **THEN** the locale switcher appears in the header bar near the theme
+- **THEN** the locale morph toggle appears in the header bar near the theme
   mode toggle
 
 #### Scenario: Mobile layout
 
 - **WHEN** the viewport is < 769px
-- **THEN** the locale switcher appears in the offcanvas menu
+- **THEN** the locale morph toggle remains visible in the header bar near the
+  theme mode toggle (not only inside the offcanvas menu)
 
 #### Scenario: Switching locale
 
-- **WHEN** the user clicks the LT button
+- **WHEN** the user activates the locale morph toggle while English is active
 - **THEN** all UI text updates to Lithuanian immediately
-- **THEN** the LT button becomes highlighted with the primary colour
-- **THEN** the locale is persisted to localStorage
+- **AND** the toggle morphs to show the Lithuanian flag and LT label
+- **AND** the locale is persisted to localStorage under `sdc-locale`
 
 ### Requirement: Phosphor game-end icons
 

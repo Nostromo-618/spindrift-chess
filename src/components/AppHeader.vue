@@ -3,7 +3,7 @@
  *  and header controls (info, source, theme switcher) with a mobile offcanvas. */
 import { ref } from "vue";
 import { VdThemeSwitcher, VdOffcanvas } from "@vanduo-oss/vd3";
-import LocaleSwitcher from "./LocaleSwitcher.vue";
+import LocaleMorphToggle from "./LocaleMorphToggle.vue";
 import { useGameStore } from "../composables/useGameStore";
 import { useModals } from "../composables/useModals";
 import { useI18n } from "../composables/useI18n";
@@ -20,9 +20,6 @@ const BRAND_ICON = `${import.meta.env.BASE_URL}brand/spindrift-rook.svg`;
 function fromMenu(action: () => void): void {
   menuOpen.value = false;
   action();
-}
-function onLocaleSelect(): void {
-  menuOpen.value = false;
 }
 </script>
 
@@ -47,8 +44,8 @@ function onLocaleSelect(): void {
       </h1>
 
       <div class="header-right">
-        <!-- Locale switcher: inline SVG flags + sliding thumb bubble -->
-        <LocaleSwitcher @select="onLocaleSelect" />
+        <!-- Locale: vd3 Mode Toggle morph — always in the header (mobile + desktop). -->
+        <LocaleMorphToggle />
 
         <!-- Theme mode toggle: always visible in the header (both breakpoints). -->
         <VdThemeSwitcher id="theme-toggle-btn" :menu="false" />
@@ -92,9 +89,6 @@ function onLocaleSelect(): void {
 
     <VdOffcanvas v-model="menuOpen" placement="right">
       <nav class="header-menu" :aria-label="t.header.menuAria">
-        <div class="header-menu-locale">
-          <LocaleSwitcher @select="onLocaleSelect" />
-        </div>
         <button type="button" class="header-menu-item" @click="fromMenu(openDisclaimer)">
           <i class="ph-bold ph-info" aria-hidden="true"></i>
           <span>{{ t.header.about }}</span>

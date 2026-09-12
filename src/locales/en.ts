@@ -16,7 +16,6 @@ export const EN: TranslationMap = {
     menuAria: "Header menu",
     localeSwitchEn: "Switch to English",
     localeSwitchLt: "Switch to Lithuanian",
-    localeGroup: "Language",
   },
   disclaimer: {
     title: "Welcome to Spindrift Chess",

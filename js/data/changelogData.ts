@@ -45,6 +45,31 @@ export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
           },
         ],
       },
+      {
+        title: "Header & locale",
+        groups: [
+          {
+            title: "1.2.2",
+            items: [
+              {
+                icon: "ph-translate",
+                title: "Locale morph toggle",
+                body: "Language switching uses a Mode Toggle morph in the header (flag + EN/LT) on mobile and desktop, replacing the older segmented pills.",
+              },
+              {
+                icon: "ph-text-aa",
+                title: "Compact header title",
+                body: "Slightly smaller title text; the rook brand icon stays a fixed ~28px so it does not shrink with the type.",
+              },
+              {
+                icon: "ph-palette",
+                title: "Button contrast",
+                body: "New Game / Undo are a touch shorter. Active Play-as segments use on-primary text so dark-mode amber fills stay readable.",
+              },
+            ],
+          },
+        ],
+      },
     ],
   },
   {
@@ -199,6 +224,31 @@ export const LT_CHANGELOG_ENTRIES: ChangelogEntry[] = [
                 icon: "ph-crown",
                 title: "Figūrų grafika",
                 body: "Aiškesnis karalius, kad skirtųsi nuo pėstininko; sulyginti šviesių ir tamsių figūrų kontūrai. Rikiams nuimtas žemyn nukreiptas mitros sluoksnis, galva šiek tiek aštresnė (abi spalvos).",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Antraštė ir kalba",
+        groups: [
+          {
+            title: "1.2.2",
+            items: [
+              {
+                icon: "ph-translate",
+                title: "Kalbos morph perjungiklis",
+                body: "Kalbos perjungimas antraštėje naudoja Mode Toggle morph (vėliava + EN/LT) mobiliame ir darbalaukio rodinyje, vietoj senojo segmentuoto valdymo.",
+              },
+              {
+                icon: "ph-text-aa",
+                title: "Kompaktiškesnė antraštė",
+                body: "Šiek tiek mažesnis pavadinimo šriftas; bokšto prekės ženklo ikona lieka fiksuota ~28px, kad nesumažėtų kartu su tekstu.",
+              },
+              {
+                icon: "ph-palette",
+                title: "Mygtukų kontrastas",
+                body: "„Naujas žaidimas“ / „Atšaukti“ šiek tiek žemesni. Aktyvūs „Žaisti kaip“ segmentai naudoja on-primary tekstą, kad tamsioje temoje gintarinis užpildas liktų skaitomas.",
               },
             ],
           },

@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Piece artwork**: Clearer king (enlarged collar so it reads apart from a pawn); light and dark outlines aligned. Bishops lost the down-pointing mitre overlay, and the head is a bit edgier (both colours).
+- **Locale switcher**: Replaced the segmented EN|LT control with a vd3 Mode Toggle morph (flag + EN/LT) in the header on mobile and desktop.
+- **Header chrome**: Slightly smaller title text with a fixed ~28px rook icon; New Game / Undo buttons a bit shorter with matching on-primary contrast for active color-choice segments in dark mode.
 
 ---
 

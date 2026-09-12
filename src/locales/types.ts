@@ -14,7 +14,6 @@ export interface TranslationMap {
     menuAria: string;
     localeSwitchEn: string;
     localeSwitchLt: string;
-    localeGroup: string;
   };
   disclaimer: {
     title: string;

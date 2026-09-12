@@ -77,6 +77,43 @@ test.describe("UI Controls", () => {
     });
   });
 
+  test.describe("Locale Switching", () => {
+    test("should show Mode Toggle morph in the header", async ({ page }) => {
+      const toggle = page.locator(".header-right [data-locale-toggle]");
+      await expect(toggle).toBeVisible();
+      await expect(toggle).toHaveAttribute("aria-label", "Switch to Lithuanian");
+      await expect(page.locator(".app-title-text")).toHaveText("Spindrift Chess");
+    });
+
+    test("should switch UI to Lithuanian and persist locale", async ({ page }) => {
+      const toggle = page.locator(".header-right [data-locale-toggle]");
+      await toggle.click();
+
+      await expect(page.locator(".app-title-text")).toHaveText("Spindrift Šachmatai");
+      await expect(toggle).toHaveAttribute("aria-label", "Perjungti į anglų");
+
+      const stored = await page.evaluate(() => localStorage.getItem("sdc-locale"));
+      expect(stored).toBe("lt");
+    });
+
+    test("should restore Lithuanian after reload", async ({ page }) => {
+      await page.evaluate(() => localStorage.setItem("sdc-locale", "lt"));
+      await page.reload();
+
+      await expect(page.locator(".app-title-text")).toHaveText("Spindrift Šachmatai");
+      await expect(page.locator(".header-right [data-locale-toggle]")).toHaveAttribute(
+        "aria-label",
+        "Perjungti į anglų",
+      );
+    });
+
+    test("should keep locale morph toggle in the header on mobile", async ({ page }) => {
+      await page.setViewportSize({ width: 540, height: 960 });
+      await expect(page.locator(".header-right [data-locale-toggle]")).toBeVisible();
+      await expect(page.locator(".header-menu [data-locale-toggle]")).toHaveCount(0);
+    });
+  });
+
   test.describe("Difficulty Selection", () => {
     test("should show Computer strength slider (levels 1–6)", async ({ page }) => {
       const slider = page.locator("#strength-slider");
