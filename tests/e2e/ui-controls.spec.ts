@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { acceptDisclaimer } from "../utils/test-utils";
 
 /**
@@ -11,51 +11,66 @@ test.describe("UI Controls", () => {
     await acceptDisclaimer(page);
   });
 
-  // Open vd3's VdThemeCustomizer via the header paint-roller (desktop) or the
-  // mobile offcanvas ("Customize theme").
-  async function openThemeCustomizer(page: Page): Promise<void> {
-    const deskBtn = page.locator(
-      '.header-controls .header-icon-btn[aria-label="Open theme customizer"]',
-    );
-    if (await deskBtn.isVisible()) {
-      await deskBtn.click();
-      return;
-    }
-    await page.locator("#mobile-menu-toggle").click();
-    await page.getByRole("button", { name: "Customize theme" }).click();
-  }
-
   test.describe("Theme Switching", () => {
-    test("should have a theme customizer control", async ({ page }) => {
-      const deskBtn = page.locator(
-        '.header-controls .header-icon-btn[aria-label="Open theme customizer"]',
-      );
-      const mobileToggle = page.locator("#mobile-menu-toggle");
-      expect((await deskBtn.isVisible()) || (await mobileToggle.isVisible())).toBeTruthy();
+    test("should have a theme mode toggle and no customizer", async ({ page }) => {
+      await expect(page.locator("#theme-toggle-btn")).toBeVisible();
+      await expect(page.locator("[data-theme-customizer-trigger]")).toHaveCount(0);
     });
 
-    test("should open the theme customizer panel", async ({ page }) => {
-      await openThemeCustomizer(page);
-      await expect(page.locator(".vd-theme-customizer-panel")).toHaveClass(/is-open/);
-      await expect(page.getByText("Customize Theme")).toBeVisible();
+    test("should lock chrome and primary over prior localStorage", async ({ page }) => {
+      await page.evaluate(() => {
+        localStorage.setItem("sdc-theme-preference", "light");
+        localStorage.setItem("sdc-palette", "fibonacci");
+        localStorage.setItem("sdc-neutral-color", "charcoal");
+        localStorage.setItem("sdc-radius", "0.5");
+        localStorage.setItem("sdc-font-preference", "lato");
+        localStorage.setItem("sdc-primary-color", "violet");
+      });
+      await page.reload();
+
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+      await expect(page.locator("html")).toHaveAttribute("data-palette", "open-color");
+      await expect(page.locator("html")).toHaveAttribute("data-neutral", "stone");
+      await expect(page.locator("html")).toHaveAttribute("data-radius", "0.375");
+      await expect(page.locator("html")).toHaveAttribute("data-font", "ubuntu");
+      await expect(page.locator("html")).toHaveAttribute("data-primary", "black");
+
+      const stored = await page.evaluate(() => ({
+        theme: localStorage.getItem("sdc-theme-preference"),
+        palette: localStorage.getItem("sdc-palette"),
+        neutral: localStorage.getItem("sdc-neutral-color"),
+        radius: localStorage.getItem("sdc-radius"),
+        font: localStorage.getItem("sdc-font-preference"),
+        primary: localStorage.getItem("sdc-primary-color"),
+        vanduoKeys: Object.keys(localStorage).filter((k) => k.startsWith("vanduo-")),
+      }));
+      expect(stored.vanduoKeys).toEqual([]);
+      expect(stored).toMatchObject({
+        theme: "light",
+        palette: "open-color",
+        neutral: "stone",
+        radius: "0.375",
+        font: "ubuntu",
+        primary: "black",
+      });
     });
 
     test("should cycle to Light theme", async ({ page }) => {
-      await page.evaluate(() => localStorage.setItem("vanduo-theme-preference", "system"));
+      await page.evaluate(() => localStorage.setItem("sdc-theme-preference", "system"));
       await page.reload();
       await page.click("#theme-toggle-btn");
       await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     });
 
     test("should cycle to Dark theme", async ({ page }) => {
-      await page.evaluate(() => localStorage.setItem("vanduo-theme-preference", "light"));
+      await page.evaluate(() => localStorage.setItem("sdc-theme-preference", "light"));
       await page.reload();
       await page.click("#theme-toggle-btn");
       await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     });
 
     test("should cycle to System theme", async ({ page }) => {
-      await page.evaluate(() => localStorage.setItem("vanduo-theme-preference", "dark"));
+      await page.evaluate(() => localStorage.setItem("sdc-theme-preference", "dark"));
       await page.reload();
       await page.click("#theme-toggle-btn");
       await expect(page.locator("html")).not.toHaveAttribute("data-theme");

@@ -14,7 +14,7 @@
   background: var(--board-dark);
   border-radius: var(--card-border-radius, var(--radius-lg));
   box-shadow: var(--shadow-2xl);
-  border: 4px solid var(--gray-8);
+  border: 6px solid var(--gray-8);
 }
 
 .chess-board-grid {
@@ -274,7 +274,7 @@
   #board-container {
     width: 100%;
     max-width: none;
-    border-width: 1px;
+    border-width: 4px;
     border-radius: 2px;
     box-shadow: none;
   }

@@ -63,10 +63,10 @@ test.describe("Security - Storage Security", () => {
     await acceptDisclaimer(page);
   });
 
-  test("should only use sdc-/vanduo- storage keys", async ({ page }) => {
+  test("should only use sdc- storage keys", async ({ page }) => {
     const keys = await page.evaluate(() => Object.keys(localStorage));
     for (const key of keys) {
-      expect(key).toMatch(/^(sdc-|vanduo-)/);
+      expect(key).toMatch(/^sdc-/);
     }
   });
 

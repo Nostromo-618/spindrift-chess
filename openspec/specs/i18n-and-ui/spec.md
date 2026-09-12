@@ -30,8 +30,56 @@ under the `sdc-locale` key.
 #### Scenario: All visible text is translatable
 
 - **WHEN** the active locale is Lithuanian
-- **THEN** every user-facing string (labels, buttons, modals, aria-labels,
+- **THEN** every user-facing Spindrift string (labels, buttons, modals, aria-labels,
   status text, piece descriptions) is displayed in Lithuanian
+
+### Requirement: Theme mode only (no customizer)
+
+The app SHALL NOT expose a theme customizer (no primary / neutral / radius / font
+/ palette UI). The header SHALL provide `VdThemeSwitcher` (`#theme-toggle-btn`)
+for light / dark / system only.
+
+On every load, palette, neutral, radius, font, and primary SHALL be forced to
+Spindrift product defaults, overwriting any prior `sdc-*` theme localStorage
+values for those fields:
+
+| Field | Value |
+| ----- | ----- |
+| Palette | `open-color` |
+| Neutral | `stone` |
+| Radius | `0.375` |
+| Font | `ubuntu` |
+| Primary | `black` (light/`system`) or `amber` (dark) |
+
+Light/dark/`system` theme mode SHALL remain user-persisted under
+`sdc-theme-preference`. All theme preference keys SHALL use the `sdc-` prefix
+(via vd3 `storagePrefix`); leftover `vanduo-*` keys SHALL be migrated then purged.
+
+Non-goals: Fibonacci palette, theme panel or swatches fan, per-user primary /
+neutral / radius / font controls.
+
+#### Scenario: No theme customizer control
+
+- **WHEN** the app loads on desktop or mobile
+- **THEN** there is no `[data-theme-customizer-trigger]` in the document
+- **AND** `#theme-toggle-btn` is visible in the header
+
+#### Scenario: Locked chrome and primary override prior localStorage
+
+- **WHEN** a returning user has non-default `sdc-neutral-color`,
+  `sdc-radius`, `sdc-font-preference`, `sdc-palette`, or
+  `sdc-primary-color`
+- **AND** the app loads
+- **THEN** those keys and matching `data-*` attributes are forced to the locked
+  defaults (including scheme primary)
+- **AND** `sdc-theme-preference` is preserved
+
+#### Scenario: Theme mode remains independent
+
+- **WHEN** the user cycles light / dark / system via `VdThemeSwitcher`
+- **THEN** `sdc-theme-preference` updates accordingly
+- **AND** locked chrome fields stay at product defaults
+- **AND** primary follows the scheme default for the new mode
 
 ### Requirement: Brand protection
 
@@ -58,8 +106,8 @@ primary colour.
 #### Scenario: Desktop layout
 
 - **WHEN** the viewport is >= 769px
-- **THEN** the locale switcher appears in the header bar between the theme
-  toggle and the header control buttons
+- **THEN** the locale switcher appears in the header bar near the theme
+  mode toggle
 
 #### Scenario: Mobile layout
 

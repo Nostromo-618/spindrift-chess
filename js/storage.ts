@@ -86,8 +86,8 @@ export function getTheme(): ThemePreference {
 export function setTheme(theme: ThemePreference): void {
   const safe: ThemePreference = theme === "light" || theme === "dark" ? theme : "system";
   write(KEYS.THEME, safe);
-  // Keep Vanduo's own key in sync so its theme customizer reads correctly
-  write("vanduo-theme-preference", safe);
+  // Keep vd3's theme-preference key in sync (storagePrefix "sdc-").
+  write("sdc-theme-preference", safe);
 }
 
 // ── Play color (white / black / random) ─────────────────────────────────────

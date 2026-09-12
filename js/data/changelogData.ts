@@ -26,9 +26,31 @@ export type ChangelogLocale = "en" | "lt";
 /** Spindrift Chess release notes (English). */
 export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: "v1.2.2",
+    date: "September 12, 2026",
+    latest: true,
+    columns: [
+      {
+        title: "Piece artwork",
+        groups: [
+          {
+            title: "1.2.2",
+            items: [
+              {
+                icon: "ph-crown",
+                title: "Piece graphics",
+                body: "Clearer king so it reads apart from a pawn; light and dark outlines aligned. Bishops lost the down-pointing mitre overlay, and the head is a bit edgier (both colours).",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "v1.2.1",
     date: "August 14, 2026",
-    latest: true,
+    latest: false,
     columns: [
       {
         title: "UI polish",
@@ -163,9 +185,31 @@ export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
 /** Spindrift Chess release notes (Lithuanian). */
 export const LT_CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: "v1.2.2",
+    date: "2026 m. rugsėjo 12 d.",
+    latest: true,
+    columns: [
+      {
+        title: "Figūrų dizainas",
+        groups: [
+          {
+            title: "1.2.2",
+            items: [
+              {
+                icon: "ph-crown",
+                title: "Figūrų grafika",
+                body: "Aiškesnis karalius, kad skirtųsi nuo pėstininko; sulyginti šviesių ir tamsių figūrų kontūrai. Rikiams nuimtas žemyn nukreiptas mitros sluoksnis, galva šiek tiek aštresnė (abi spalvos).",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "v1.2.1",
     date: "2026 m. rugpjūčio 14 d.",
-    latest: true,
+    latest: false,
     columns: [
       {
         title: "Sąsajos patobulinimai",

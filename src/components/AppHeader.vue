@@ -1,7 +1,6 @@
 <script setup lang="ts">
 /** Sticky app header: brand, live "thinking" indicator, locale switcher,
- *  and header controls (info, source, theme switcher, theme customizer)
- *  with a mobile offcanvas. */
+ *  and header controls (info, source, theme switcher) with a mobile offcanvas. */
 import { ref } from "vue";
 import { VdThemeSwitcher, VdOffcanvas } from "@vanduo-oss/vd3";
 import LocaleSwitcher from "./LocaleSwitcher.vue";
@@ -18,9 +17,6 @@ const menuOpen = ref(false);
 const REPO_URL = "https://github.com/Nostromo-618/spindrift-chess";
 const BRAND_ICON = `${import.meta.env.BASE_URL}brand/spindrift-rook.svg`;
 
-function openCustomizer(): void {
-  window.dispatchEvent(new Event("vd:open-customizer"));
-}
 function fromMenu(action: () => void): void {
   menuOpen.value = false;
   action();
@@ -78,14 +74,6 @@ function onLocaleSelect(): void {
           >
             <i class="ph-bold ph-github-logo" aria-hidden="true"></i>
           </a>
-          <button
-            type="button"
-            class="header-icon-btn"
-            :aria-label="t.header.customizeAria"
-            @click="openCustomizer"
-          >
-            <i class="ph-bold ph-paint-roller" aria-hidden="true"></i>
-          </button>
         </div>
 
         <!-- Mobile: hamburger opens the offcanvas with the desktop controls. -->
@@ -121,10 +109,6 @@ function onLocaleSelect(): void {
           <i class="ph-bold ph-github-logo" aria-hidden="true"></i>
           <span>{{ t.header.github }}</span>
         </a>
-        <button type="button" class="header-menu-item" @click="fromMenu(openCustomizer)">
-          <i class="ph-bold ph-paint-roller" aria-hidden="true"></i>
-          <span>{{ t.header.customize }}</span>
-        </button>
       </nav>
     </VdOffcanvas>
   </header>

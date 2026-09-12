@@ -348,6 +348,16 @@
   --vd-btn-ring-gap: 0.26rem;
 }
 
+/* Slightly shorter/lighter text than default md; width + icons unchanged. */
+.new-game-action .vd-btn {
+  --vd-btn-padding-y: 0.625rem; /* was 0.8125rem */
+  --vd-btn-font-size: 0.875rem; /* was 1rem (--vd-font-size-base) */
+}
+
+.new-game-action .vd-btn > i {
+  font-size: 1rem; /* keep Phosphor icons at default md size */
+}
+
 .new-game-btn.vd-btn {
   flex: 1;
   justify-content: center;
@@ -984,51 +994,6 @@
   }
 }
 
-/* ── Theme customizer: hide vd3's built-in FAB (the header paint-roller opens
-      it via the vd:open-customizer event) and re-anchor the panel as a
-      dropdown directly under that top-right control. ────────────────────── */
-[data-theme-customizer-trigger] {
-  display: none !important;
-}
-
-/* !important is needed to beat vd3's higher-specificity `.is-open` drawer rules;
-   this is a deliberate consumer override of the library component's position.
-   `right` aligns the dropdown's right edge under the header paint-roller (which
-   sits 21px inside the 1200px-max header). */
-body > .vd-theme-customizer-panel {
-  position: fixed !important;
-  top: 68px !important;
-  right: max(1rem, calc((100vw - 1200px) / 2 + 21px)) !important;
-  left: auto !important;
-  bottom: auto !important;
-  width: min(340px, calc(100vw - 2rem)) !important;
-  max-width: min(340px, calc(100vw - 2rem)) !important;
-  max-height: calc(100vh - 88px) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: var(--radius-md) !important;
-  box-shadow: var(--shadow-2xl) !important;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px) !important;
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease,
-    visibility 0.2s ease !important;
-}
-
-body > .vd-theme-customizer-panel.is-open {
-  opacity: 1 !important;
-  visibility: visible !important;
-  transform: translateY(0) !important;
-}
-
-/* Transparent, click-through-to-close overlay so clicking outside dismisses the
-   dropdown (no full-screen dim). */
-body > .vd-theme-customizer-overlay {
-  display: block;
-  background: transparent;
-}
-
 /* ── Responsive ────────────────────────────────────────────────────────── */
 @media (min-width: 992px) {
   .board-size-control-desktop {
@@ -1078,7 +1043,7 @@ body > .vd-theme-customizer-overlay {
 
 @media (max-width: 575px) {
   .app-main {
-    padding: 1px 1px 0.75rem;
+    padding: 0.375rem 1px 0.75rem;
   }
 
   .app-header {
@@ -1092,6 +1057,7 @@ body > .vd-theme-customizer-overlay {
   .app-aside {
     /* Give the board the full width while retaining the controls' inset. */
     padding-inline: calc(0.75rem - 1px);
+    margin-top: 1.5rem;
   }
 
   .app-header-inner {

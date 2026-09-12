@@ -49,11 +49,11 @@ describe("Storage", () => {
       expect(getTheme()).toBe("system");
     });
 
-    it("rejects corrupt stored theme and syncs vanduo key", () => {
+    it("rejects corrupt stored theme and syncs sdc-theme-preference", () => {
       localStorage.setItem("sdc-theme", "neon");
       expect(getTheme()).toBe("system");
       setTheme("dark");
-      expect(localStorage.getItem("vanduo-theme-preference")).toBe("dark");
+      expect(localStorage.getItem("sdc-theme-preference")).toBe("dark");
     });
   });
 
