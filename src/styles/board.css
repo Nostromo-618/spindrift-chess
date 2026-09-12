@@ -1,6 +1,6 @@
 /**
- * Chess board island styles — kept 1:1 from the vanilla app (BoardView renders
- * this DOM imperatively). Consumes the app tokens from tokens-bridge.css.
+ * Chess board island styles (BoardView renders this DOM imperatively).
+ * Consumes the app tokens from tokens-bridge.css.
  */
 
 /* ── Board container ───────────────────────────────────────────────────── */
@@ -8,9 +8,7 @@
   width: 100%;
   max-width: min(100%, var(--board-max-width, 800px));
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: auto auto;
+  display: block;
   box-sizing: border-box;
   overflow: hidden;
   background: var(--board-dark);
@@ -21,8 +19,6 @@
 
 .chess-board-grid {
   position: relative;
-  grid-column: 2;
-  grid-row: 1;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -133,15 +129,64 @@
   cursor: pointer;
 }
 
-.chess-piece-img {
+/* Accepted "halfway" study: average each original visible height with the
+ * FIDE height relative to the unchanged king. These are uniform scales, not
+ * path edits. Original bounds were measured at 1000px with alpha >= 50%.
+ * translate(x, y) centers visible artwork and aligns its foot at 95.1%.
+ * Both sides and promotion use the exact same geometry and positioning.
+ */
+.chess-piece[data-piece$="K"],
+.promotion-picker-option[data-piece="K"] {
+  --piece-scale: 1;
+  --piece-x: 0.25%;
+  --piece-y: 0%;
+}
+
+.chess-piece[data-piece$="Q"],
+.promotion-picker-option[data-piece="Q"] {
+  --piece-scale: 0.95855263;
+  --piece-x: 2.024441%;
+  --piece-y: 4.325066%;
+}
+
+.chess-piece[data-piece$="B"],
+.promotion-picker-option[data-piece="B"] {
+  --piece-scale: 0.87130256;
+  --piece-x: 6.478437%;
+  --piece-y: 12.500517%;
+}
+
+.chess-piece[data-piece$="N"],
+.promotion-picker-option[data-piece="N"] {
+  --piece-scale: 0.81897212;
+  --piece-x: 9.051394%;
+  --piece-y: 17.625237%;
+}
+
+.chess-piece[data-piece$="R"],
+.promotion-picker-option[data-piece="R"] {
+  --piece-scale: 0.7950342;
+  --piece-x: 10.129035%;
+  --piece-y: 20.128275%;
+}
+
+.chess-piece[data-piece$="P"],
+.promotion-picker-option[data-piece="P"] {
+  --piece-scale: 0.76882041;
+  --piece-x: 11.789626%;
+  --piece-y: 22.523353%;
+}
+
+.chess-piece-img,
+.promotion-picker-img {
   display: block;
-  width: 88%;
-  height: 88%;
+  width: 100%;
+  height: 100%;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  transform: scaleY(0.93); /* slightly shorter → reads thicker */
-  transform-origin: center center;
+  transform: translate(var(--piece-x, 0%), var(--piece-y, 0%)) scale(var(--piece-scale, 1));
+  transform-origin: 0 0;
   pointer-events: none;
 }
 
@@ -185,50 +230,32 @@
   background-color: #90ee90 !important;
 }
 
-.promotion-picker-img {
-  display: block;
-  width: 85%;
-  height: 85%;
-  object-fit: contain;
+/* ── Coordinate labels ─────────────────────────────────────────────────── */
+.chess-coordinate {
+  position: absolute;
+  z-index: 3;
+  font-size: clamp(0.75rem, 1.8cqi, 0.875rem);
+  font-weight: 700;
+  line-height: 1;
+  color: #11141a;
+  text-shadow: 0 1px 1px rgba(241, 239, 237, 0.65);
   pointer-events: none;
+  user-select: none;
 }
 
-/* ── Coordinate labels ─────────────────────────────────────────────────── */
-.chess-file-labels {
-  grid-column: 2;
-  grid-row: 2;
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
+.chess-square.dark > .chess-coordinate {
+  color: #fffaf2;
+  text-shadow: 0 1px 1px rgba(17, 20, 26, 0.9);
 }
 
 .chess-file-label {
-  text-align: center;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  padding: 2px 0;
-  user-select: none;
-}
-
-.chess-rank-labels {
-  grid-column: 1;
-  grid-row: 1;
-  display: grid;
-  grid-template-rows: repeat(8, 1fr);
-  width: 16px;
-  flex-shrink: 0;
+  right: 3px;
+  bottom: 2px;
 }
 
 .chess-rank-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-align: center;
-  user-select: none;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  left: 3px;
+  top: 2px;
 }
 
 /* ── Responsive board sizing ───────────────────────────────────────────── */
@@ -241,23 +268,14 @@
     margin-right: auto;
     overflow: hidden;
   }
-
-  .chess-rank-labels {
-    width: 14px;
-  }
 }
 
 @media (max-width: 575px) {
   #board-container {
-    width: min(100%, 94vw, var(--board-max-width, 800px));
-  }
-
-  .chess-rank-labels {
-    width: 12px;
-  }
-
-  .chess-file-label,
-  .chess-rank-label {
-    font-size: 0.6rem;
+    width: 100%;
+    max-width: none;
+    border-width: 1px;
+    border-radius: 2px;
+    box-shadow: none;
   }
 }

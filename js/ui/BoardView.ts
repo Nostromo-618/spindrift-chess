@@ -243,29 +243,25 @@ export class BoardView {
       }
     }
 
-    const fileLabelsRow = document.createElement("div");
-    fileLabelsRow.className = "chess-file-labels";
     for (let i = 0; i < 8; i++) {
       const label = document.createElement("span");
-      label.className = "chess-file-label";
+      label.className = "chess-coordinate chess-file-label";
       label.textContent = files[i];
-      fileLabelsRow.appendChild(label);
+      label.setAttribute("aria-hidden", "true");
+      this.squareEls.get(`${files[i]}1`)!.appendChild(label);
       this.fileLabelEls.set(files[i], label);
     }
 
-    const rankLabelsCol = document.createElement("div");
-    rankLabelsCol.className = "chess-rank-labels";
     for (let rank = 8; rank >= 1; rank--) {
       const label = document.createElement("span");
-      label.className = "chess-rank-label";
+      label.className = "chess-coordinate chess-rank-label";
       label.textContent = String(rank);
-      rankLabelsCol.appendChild(label);
+      label.setAttribute("aria-hidden", "true");
+      this.squareEls.get(`a${rank}`)!.appendChild(label);
       this.rankLabelEls.set(rank, label);
     }
 
-    this.container.appendChild(rankLabelsCol);
     this.container.appendChild(boardGrid);
-    this.container.appendChild(fileLabelsRow);
   }
 
   render(boardState: BoardStateMap, options: RenderOptions): void {
@@ -283,20 +279,14 @@ export class BoardView {
         ? ["a", "b", "c", "d", "e", "f", "g", "h"]
         : ["h", "g", "f", "e", "d", "c", "b", "a"];
 
-    const fileLabelContainer = this.container.querySelector(".chess-file-labels");
-    if (fileLabelContainer) {
-      const labels = fileLabelContainer.querySelectorAll(".chess-file-label");
-      for (let i = 0; i < files.length && i < labels.length; i++) {
-        labels[i].textContent = files[i];
-      }
-    }
-    const rankLabelContainer = this.container.querySelector(".chess-rank-labels");
-    if (rankLabelContainer) {
-      const labels = rankLabelContainer.querySelectorAll(".chess-rank-label");
-      for (let i = 0; i < ranks.length && i < labels.length; i++) {
-        labels[i].textContent = String(ranks[i]);
-      }
-    }
+    // Keep each label tied to its actual square when the board flips.
+    // Labels live inside squares, so highlights and promotion layer naturally.
+    this.fileLabelEls.forEach((label, file) => {
+      this.squareEls.get(`${file}${ranks[7]}`)!.appendChild(label);
+    });
+    this.rankLabelEls.forEach((label, rank) => {
+      this.squareEls.get(`${files[0]}${rank}`)!.appendChild(label);
+    });
 
     this.squareEls.forEach((squareEl, square) => {
       const code = boardState[square] || null;

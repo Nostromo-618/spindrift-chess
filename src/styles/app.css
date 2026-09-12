@@ -1078,7 +1078,20 @@ body > .vd-theme-customizer-overlay {
 
 @media (max-width: 575px) {
   .app-main {
-    padding: 0.75rem;
+    padding: 1px 1px 0.75rem;
+  }
+
+  .app-header {
+    margin-bottom: 0;
+  }
+
+  .app-layout {
+    gap: 1px;
+  }
+
+  .app-aside {
+    /* Give the board the full width while retaining the controls' inset. */
+    padding-inline: calc(0.75rem - 1px);
   }
 
   .app-header-inner {
