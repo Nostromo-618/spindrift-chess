@@ -3,6 +3,7 @@ import type { TranslationMap } from "./types";
 export const EN: TranslationMap = {
   app: {
     title: "Spindrift Chess",
+    titleProduct: "Chess",
     ready: "Ready. Select settings and click 'New Game' to start.",
     initError: "Failed to initialize game. Please refresh and try again.",
     moveError: "An error occurred while computing AI move.",

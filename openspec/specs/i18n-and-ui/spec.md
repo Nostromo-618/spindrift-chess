@@ -43,12 +43,12 @@ On every load, palette, neutral, radius, font, and primary SHALL be forced to
 Spindrift product defaults, overwriting any prior `sdc-*` theme localStorage
 values for those fields:
 
-| Field | Value |
-| ----- | ----- |
-| Palette | `open-color` |
-| Neutral | `stone` |
-| Radius | `0.375` |
-| Font | `ubuntu` |
+| Field   | Value                                      |
+| ------- | ------------------------------------------ |
+| Palette | `open-color`                               |
+| Neutral | `stone`                                    |
+| Radius  | `0.375`                                    |
+| Font    | `ubuntu`                                   |
 | Primary | `black` (light/`system`) or `amber` (dark) |
 
 Light/dark/`system` theme mode SHALL remain user-persisted under
@@ -90,6 +90,14 @@ translated, transliterated, or altered in any way.
 
 - **WHEN** the active locale is Lithuanian
 - **THEN** the app title in the header reads "Spindrift Šachmatai" (not "Šachmatai")
+
+#### Scenario: Lithuanian title readable on narrow phones
+
+- **WHEN** the active locale is Lithuanian and the viewport is about 360–393px wide
+- **THEN** the full header title "Spindrift Šachmatai" is visible without ellipsis truncation
+- **AND** header control gaps/paddings MAY tighten to keep the title on one line
+- **AND** on very narrow viewports (~320px and below) the product word "Šachmatai" MAY
+  stack under the immutable brand "Spindrift" with a small vertical gap between the lines
 
 #### Scenario: Brand references in modal text
 
@@ -166,3 +174,47 @@ optional `t` i18n object; status text from GameState SHALL be translated in the
 
 - **WHEN** a `BoardView` instance receives a Lithuanian `t` i18n object
 - **THEN** piece ARIA labels use Lithuanian descriptions
+
+### Requirement: Thinking status visibility
+
+Detailed thinking status (chip plus depth / nodes / elapsed time) SHALL appear
+only when uncapped strength is enabled. For capped levels 1–6 the navbar
+thinking indicator MAY blink while the engine is busy, but the status panel
+SHALL NOT show depth / nodes / time metrics. The uncapped think-time control
+SHALL allow 1–180 seconds. On viewports at or below the stacked-board
+breakpoint (991px), uncapped thinking details SHALL render between New Game
+and Play as while the engine is busy.
+
+#### Scenario: Capped levels hide detailed thinking
+
+- **WHEN** uncapped is off and the computer is thinking
+- **THEN** the navbar brain indicator is active
+- **AND** the status panel does not show depth / nodes / time metrics
+
+#### Scenario: Uncapped shows detailed thinking
+
+- **WHEN** uncapped is on and the computer is thinking
+- **THEN** depth / nodes / elapsed time are visible
+- **AND** on mobile they appear between New Game and Play as
+
+#### Scenario: Think-time slider max is 180 seconds
+
+- **WHEN** uncapped is enabled
+- **THEN** the think-time slider maximum is 180 seconds
+
+### Requirement: First-visit play defaults
+
+On a first visit with no saved play settings, the app SHALL default computer
+strength to level 4 and Play as to White. Returning users SHALL keep values
+persisted under `sdc-difficulty` and `sdc-color`.
+
+#### Scenario: Fresh visitor defaults
+
+- **WHEN** a new user loads the app with no `sdc-difficulty` or `sdc-color` keys
+- **THEN** the strength control shows level 4
+- **AND** Play as White is selected
+
+#### Scenario: Persisted settings win
+
+- **WHEN** a returning user has `sdc-difficulty` and/or `sdc-color` set
+- **THEN** those stored values are restored instead of the first-visit defaults

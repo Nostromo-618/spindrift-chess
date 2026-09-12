@@ -21,8 +21,7 @@
     <script>
       (function () {
         try {
-          var p =
-            localStorage.getItem("sdc-theme-preference") || localStorage.getItem("sdc-theme");
+          var p = localStorage.getItem("sdc-theme-preference") || localStorage.getItem("sdc-theme");
           if (p === "light" || p === "dark") {
             document.documentElement.setAttribute("data-theme", p);
           }

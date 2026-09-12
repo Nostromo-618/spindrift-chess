@@ -59,12 +59,27 @@ export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
               {
                 icon: "ph-text-aa",
                 title: "Compact header title",
-                body: "Slightly smaller title text; the rook brand icon stays a fixed ~28px so it does not shrink with the type.",
+                body: "Slightly smaller title text; the rook brand icon stays a fixed ~28px so it does not shrink with the type. On narrow phones, header padding and the locale toggle tighten so Lithuanian Spindrift Šachmatai stays on one line when possible; only very narrow screens stack Šachmatai under Spindrift, with a little vertical gap.",
               },
               {
                 icon: "ph-palette",
                 title: "Button contrast",
                 body: "New Game / Undo are a touch shorter. Active Play-as segments use on-primary text so dark-mode amber fills stay readable.",
+              },
+              {
+                icon: "ph-squares-four",
+                title: "Board chrome",
+                body: "Board outline is a touch thinner, with slightly rounder corners.",
+              },
+              {
+                icon: "ph-sliders-horizontal",
+                title: "Defaults & thinking",
+                body: "First visit defaults to strength 4 and Play as White. Detailed thinking (depth / nodes / time) shows only in uncapped mode; on mobile it sits under New Game. Uncapped think time goes up to 180 seconds.",
+              },
+              {
+                icon: "ph-bell",
+                title: "Bottom toasts",
+                body: "Notifications use vd3 bottom-right placement on desktop and mobile.",
               },
             ],
           },
@@ -249,6 +264,16 @@ export const LT_CHANGELOG_ENTRIES: ChangelogEntry[] = [
                 icon: "ph-palette",
                 title: "Mygtukų kontrastas",
                 body: "„Naujas žaidimas“ / „Atšaukti“ šiek tiek žemesni. Aktyvūs „Žaisti kaip“ segmentai naudoja on-primary tekstą, kad tamsioje temoje gintarinis užpildas liktų skaitomas.",
+              },
+              {
+                icon: "ph-sliders-horizontal",
+                title: "Numatytosios reikšmės ir mąstymas",
+                body: "Pirmą kartą stiprumas 4, žaisti kaip baltieji. Detalus mąstymas (gylis / mazgai / laikas) tik be apribojimų; mobiliajame — po „Naujas žaidimas“. Mąstymo laikas iki 180 s.",
+              },
+              {
+                icon: "ph-bell",
+                title: "Pranešimai apačioje",
+                body: "Pranešimai naudoja vd3 bottom-right poziciją darbalaukyje ir mobiliajame.",
               },
             ],
           },

@@ -10,7 +10,7 @@ import { useI18n } from "../composables/useI18n";
 
 const { status } = useGameStore();
 const { openDisclaimer } = useModals();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const menuOpen = ref(false);
 
@@ -35,7 +35,10 @@ function fromMenu(action: () => void): void {
           alt=""
           aria-hidden="true"
         />
-        <span class="app-title-text">{{ t.app.title }}</span>
+        <span class="app-title-text" :class="{ 'app-title-text--lt-stack': locale === 'lt' }">
+          <span class="app-title-brand">Spindrift</span><span class="app-title-sep">{{ " " }}</span
+          ><span class="app-title-product">{{ t.app.titleProduct }}</span>
+        </span>
         <i
           class="ph-bold ph-brain thinking-icon"
           :class="{ 'thinking-icon--active blinking': status.busy }"

@@ -2,7 +2,8 @@
 
 ## Purpose
 
-TBD - created by archiving change strengthen-aurora-engine. Update Purpose after archive.
+Defines Spindrift Engine search: alpha-beta / PVS, quiescence, move ordering,
+transposition tables, time management, and related search-policy behaviour.
 
 ## Requirements
 

@@ -3,6 +3,7 @@ import type { TranslationMap } from "./types";
 export const LT: TranslationMap = {
   app: {
     title: "Spindrift Šachmatai",
+    titleProduct: "Šachmatai",
     ready: "Pasiruošę. Pasirinkite nustatymus ir spustelėkite „Naujas žaidimas“.",
     initError: "Nepavyko paleisti žaidimo. Atnaujinkite puslapį ir bandykite dar kartą.",
     moveError: "Įvyko klaida skaičiuojant kompiuterio ėjimą.",

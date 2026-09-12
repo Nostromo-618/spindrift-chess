@@ -23,7 +23,7 @@ export function migrateVanduoThemeKeysToSdc(store: StorageLike = localStorage): 
     const legacyKey = `${LEGACY_PREFIX}${suffix}`;
     const nextKey = `${APP_PREFIX}${suffix}`;
     const legacy = store.getItem(legacyKey);
-    if (legacy != null && store.getItem(nextKey) == null) {
+    if (legacy !== null && store.getItem(nextKey) === null) {
       store.setItem(nextKey, legacy);
     }
   }

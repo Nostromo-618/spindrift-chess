@@ -123,8 +123,8 @@ test.describe("UI Controls", () => {
       await expect(page.getByText("Computer strength", { exact: true })).toBeVisible();
     });
 
-    test("should default to level 3", async ({ page }) => {
-      await expect(page.locator("#strength-slider")).toHaveValue("3");
+    test("should default to level 4", async ({ page }) => {
+      await expect(page.locator("#strength-slider")).toHaveValue("4");
     });
 
     test("should allow changing difficulty", async ({ page }) => {
@@ -141,7 +141,7 @@ test.describe("UI Controls", () => {
       await expect(page.locator("#strength-slider")).toHaveCount(0);
       await expect(page.locator("#think-time-slider")).toBeVisible();
       await expect(page.locator("#think-time-slider")).toHaveAttribute("min", "1");
-      await expect(page.locator("#think-time-slider")).toHaveAttribute("max", "60");
+      await expect(page.locator("#think-time-slider")).toHaveAttribute("max", "180");
     });
   });
 
@@ -159,12 +159,12 @@ test.describe("UI Controls", () => {
       const blackBtn = page.locator('#color-choice button[data-color="black"]');
       const randomBtn = page.locator('#color-choice button[data-color="random"]');
 
-      await expect(randomBtn).toHaveClass(/vd-is-active/);
-      await expect(whiteBtn).not.toHaveClass(/vd-is-active/);
+      await expect(whiteBtn).toHaveClass(/vd-is-active/);
+      await expect(randomBtn).not.toHaveClass(/vd-is-active/);
 
       await blackBtn.click();
       await expect(blackBtn).toHaveClass(/vd-is-active/);
-      await expect(randomBtn).not.toHaveClass(/vd-is-active/);
+      await expect(whiteBtn).not.toHaveClass(/vd-is-active/);
     });
 
     test("should start game with selected color", async ({ page }) => {

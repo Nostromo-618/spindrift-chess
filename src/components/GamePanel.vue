@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /** The right-hand control card: new game, settings, status, move history. */
 import { computed } from "vue";
-import { VdCard, VdButton, VdSeparator, VdSlider, VdSwitch } from "@vanduo-oss/vd3";
+import { VdCard, VdButton, VdChip, VdSeparator, VdSlider, VdSwitch } from "@vanduo-oss/vd3";
 import SegmentedControl from "./controls/SegmentedControl.vue";
 import StatusPanel from "./StatusPanel.vue";
 import MoveHistory from "./MoveHistory.vue";
@@ -35,6 +35,9 @@ const colorOptions = computed(() => [
 const thinkTimeLabel = computed(() => t.value.game.thinkTime({ sec: settings.thinkTimeSec }));
 const thinkTimeMinSec = Math.round(MIN_THINK_TIME_MS / 1000);
 const thinkTimeMaxSec = Math.round(MAX_THINK_TIME_MS / 1000);
+
+/** Mobile-only elevated strip: uncapped thinking between New Game and Play as. */
+const showElevatedThinking = computed(() => status.busy && settings.uncapped);
 </script>
 
 <template>
@@ -63,6 +66,18 @@ const thinkTimeMaxSec = Math.round(MAX_THINK_TIME_MS / 1000);
         <i class="ph-bold ph-arrow-counter-clockwise" aria-hidden="true"></i>
         {{ t.game.undo }}
       </VdButton>
+    </div>
+
+    <div
+      v-if="showElevatedThinking"
+      class="status-bar status-bar--elevated is-busy"
+      aria-live="polite"
+    >
+      <VdChip variant="primary" class="status-thinking">
+        <i class="ph-bold ph-brain blinking" aria-hidden="true"></i>
+        {{ t.status.thinking }}
+      </VdChip>
+      <div class="status-text">{{ status.text }}</div>
     </div>
 
     <SegmentedControl

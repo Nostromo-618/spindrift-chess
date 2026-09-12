@@ -1,18 +1,22 @@
 <script setup lang="ts">
 /** Live status: current phase message, turn / last-move detail. */
+import { computed } from "vue";
 import { VdChip } from "@vanduo-oss/vd3";
 import { useGameStore } from "../composables/useGameStore";
 import { useI18n } from "../composables/useI18n";
 
 const store = useGameStore();
-const { status } = store;
+const { status, settings } = store;
 const { t } = useI18n();
+
+/** Detailed thinking (chip + metrics) is uncapped-only; navbar brain covers 1–6. */
+const showThinkingDetails = computed(() => status.busy && settings.uncapped);
 </script>
 
 <template>
   <section class="status-panel" :aria-label="t.status.label">
-    <div class="status-bar" :class="{ 'is-busy': status.busy }">
-      <VdChip v-if="status.busy" variant="primary" class="status-thinking">
+    <div class="status-bar status-bar--panel" :class="{ 'is-busy': showThinkingDetails }">
+      <VdChip v-if="showThinkingDetails" variant="primary" class="status-thinking">
         <i class="ph-bold ph-brain blinking" aria-hidden="true"></i>
         {{ t.status.thinking }}
       </VdChip>

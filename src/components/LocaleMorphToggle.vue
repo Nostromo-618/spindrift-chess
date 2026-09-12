@@ -28,10 +28,7 @@ function toggleLocale(): void {
       :aria-label="locale === 'en' ? t.header.localeSwitchLt : t.header.localeSwitchEn"
       @click="toggleLocale"
     >
-      <span
-        class="vd-morph-content"
-        :class="startEn ? 'vd-morph-current' : 'vd-morph-next'"
-      >
+      <span class="vd-morph-content" :class="startEn ? 'vd-morph-current' : 'vd-morph-next'">
         <svg class="locale-morph-flag" viewBox="0 0 60 40" aria-hidden="true">
           <rect width="60" height="40" fill="#012169" />
           <path d="M0,0 L60,40 M60,0 L0,40" stroke="#fff" stroke-width="6" />
@@ -41,10 +38,7 @@ function toggleLocale(): void {
         </svg>
         <span>EN</span>
       </span>
-      <span
-        class="vd-morph-content"
-        :class="startEn ? 'vd-morph-next' : 'vd-morph-current'"
-      >
+      <span class="vd-morph-content" :class="startEn ? 'vd-morph-next' : 'vd-morph-current'">
         <svg class="locale-morph-flag" viewBox="0 0 60 40" aria-hidden="true">
           <rect width="60" height="40" fill="#FDB913" />
           <rect y="13.33" width="60" height="13.34" fill="#006A44" />

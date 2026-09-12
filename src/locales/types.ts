@@ -1,6 +1,9 @@
 export interface TranslationMap {
   app: {
+    /** Full app name (brand + product), e.g. for copy outside the header. */
     title: string;
+    /** Product word after the immutable brand "Spindrift" (Chess / Šachmatai). */
+    titleProduct: string;
     ready: string;
     initError: string;
     moveError: string;

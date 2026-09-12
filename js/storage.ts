@@ -29,7 +29,7 @@ const KEYS = {
 /** Default uncapped think time (matches level-6 human-play default). */
 export const DEFAULT_THINK_TIME_MS = 10_000;
 export const MIN_THINK_TIME_MS = 1_000;
-export const MAX_THINK_TIME_MS = 60_000;
+export const MAX_THINK_TIME_MS = 180_000;
 
 export type ThemePreference = "system" | "light" | "dark";
 export type ColorChoice = "white" | "black" | "random";

@@ -91,10 +91,24 @@
 }
 
 .app-title-text {
+  /* Inline (not flex) so the word-separating space is not collapsed. */
+  display: inline;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.app-title-sep {
+  white-space: pre;
+  letter-spacing: normal;
+  /* Counter title’s tight letter-spacing so the word break stays visible. */
+  padding-inline: 0.06em;
+}
+
+.app-title-brand,
+.app-title-product {
+  display: inline;
 }
 
 /* Reserve a fixed slot so header height is stable when the AI is thinking. */
@@ -453,6 +467,11 @@
 
 .status-thinking .ph-brain {
   margin-right: 0.3rem;
+}
+
+/* Elevated uncapped thinking (between New Game and Play as) — mobile only. */
+.status-bar--elevated {
+  display: none;
 }
 
 .status-detail {
@@ -963,30 +982,18 @@
     order: 2;
   }
 
+  /* Uncapped thinking: elevate under New Game; hide duplicate in status panel. */
+  .status-bar--elevated {
+    display: flex;
+  }
+
+  .status-bar--panel.is-busy {
+    display: none;
+  }
+
   .changelog-columns {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.5rem;
-  }
-
-  /* vd3's VdToastContainer has no placement prop; each toast defaults to
-     top-right. Pin top stacks to the bottom on the stacked-board breakpoint. */
-  .vd-toast-container-top-right,
-  .vd-toast-container-top-left,
-  .vd-toast-container-top-center {
-    top: auto;
-    bottom: 0;
-  }
-
-  .vd-toast-container-top-center .vd-toast {
-    transform: translateY(100%);
-  }
-
-  .vd-toast-container-top-center .vd-toast.is-visible {
-    transform: translateY(0);
-  }
-
-  .vd-toast-container-top-center .vd-toast.is-exiting {
-    transform: translateY(100%);
   }
 }
 
@@ -997,6 +1004,7 @@
 
   .app-header {
     margin-bottom: 0;
+    padding: 0.5rem 0;
   }
 
   .app-layout {
@@ -1010,11 +1018,55 @@
   }
 
   .app-header-inner {
-    padding: 0 0.75rem;
+    padding: 0 0.45rem;
+    gap: 0.25rem;
+    min-height: 2.4rem;
   }
 
   .app-title {
+    gap: 0.25rem;
     font-size: var(--font-size-base);
+  }
+
+  /* Free horizontal room for LT title when the brain is idle. */
+  .thinking-icon:not(.thinking-icon--active) {
+    width: 0;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  .thinking-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 1.1rem;
+  }
+
+  .header-right {
+    gap: 0;
+  }
+
+  .locale-morph-toggle {
+    min-width: 3.1rem;
+    min-height: 1.6rem;
+    padding: 0.1rem 0.25rem;
+    font-size: 0.65rem;
+  }
+
+  .locale-morph-toggle .vd-morph-content {
+    gap: 0.15rem;
+  }
+
+  .locale-morph-flag {
+    width: 0.95em;
+    height: 0.65em;
+  }
+
+  .header-icon-btn,
+  .header-right .vd-theme-switcher-toggle {
+    width: 1.85rem;
+    height: 1.85rem;
+    font-size: 1.05rem;
   }
 
   .header-controls {
@@ -1023,5 +1075,36 @@
 
   .mobile-menu-toggle {
     display: inline-flex;
+  }
+}
+
+/* LT title: pad/gap wins keep one line on ~360–393px; stack only on very narrow. */
+@media (max-width: 320px) {
+  .app-title-text--lt-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    /* Breathing room so “p” descenders don’t collide with “Š”. */
+    gap: 0.28em;
+    line-height: 1.15;
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+  }
+
+  .app-title-text--lt-stack .app-title-sep {
+    display: none;
+  }
+
+  .app-title-text--lt-stack .app-title-brand,
+  .app-title-text--lt-stack .app-title-product {
+    display: block;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .app-title-text--lt-stack .app-title-product {
+    font-size: 0.94em;
+    font-weight: 700;
   }
 }

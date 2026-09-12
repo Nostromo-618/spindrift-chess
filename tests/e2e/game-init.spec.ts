@@ -27,8 +27,8 @@ test.describe("Game Initialization", () => {
     await expect(newGameBtn).toHaveText("New Game");
   });
 
-  test("should display default difficulty as Level 3 (Medium)", async ({ page }) => {
-    await expect(page.locator("#strength-slider")).toHaveValue("3");
+  test("should display default difficulty as Level 4", async ({ page }) => {
+    await expect(page.locator("#strength-slider")).toHaveValue("4");
   });
 
   test("should start new game when clicking New Game", async ({ page }) => {
@@ -58,7 +58,7 @@ test.describe("Game Initialization", () => {
     await expect(blackBtn).toBeVisible();
     await expect(randomBtn).toBeVisible();
 
-    await expect(randomBtn).toHaveClass(/vd-is-active/);
+    await expect(whiteBtn).toHaveClass(/vd-is-active/);
   });
 
   test("should switch color choice when clicking Black", async ({ page }) => {
