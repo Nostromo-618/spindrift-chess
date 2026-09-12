@@ -398,6 +398,35 @@ function enlargeKingCollar(piecePaths) {
 }
 
 /**
+ * Replace only the rounded crown between the cross and the existing collar.
+ * A broad, softly curved upper rim tapers down into the collar, which widens
+ * again below it. Cross, collar, body, holes and original overall bounds stay
+ * intact. Shared source geometry produces the same contour for both colours.
+ * @param {ReturnType<typeof parsePaths>} piecePaths
+ */
+function taperKingCrown(piecePaths) {
+  const sil = mainSilhouette(piecePaths);
+  if (!sil) throw new Error("King silhouette missing");
+
+  // Exact source landmarks keep this operation local to the original head.
+  const right = /C 1054\.23 217\.498 .*?C 1100\.36 401\.974 1101\.03 407\.231 1104\.46 407\.153/;
+  const left = /C 949\.024 399\.88 .*?C 995\.784 217\.795 996\.708 216\.426 999\.829 213\.007/;
+  if (!right.test(sil.d) || !left.test(sil.d)) {
+    throw new Error("Original king crown landmarks changed; review the local contour edit");
+  }
+  sil.d = sil.d
+    .replace(
+      right,
+      "C 1087 218 1145 219 1171 231 C 1180 235 1181 243 1176 253 C 1148 297 1118 353 1104.46 407.153",
+    )
+    .replace(
+      left,
+      "C 938 353 908 297 880 253 C 875 243 876 235 885 231 C 911 219 968 218 999.829 213.007",
+    );
+  sil.bbox = pathBBox(sil.d) ?? sil.bbox;
+}
+
+/**
  * Sharpen the bishop mitre: scale the existing head hole slightly (more diamond)
  * and pinch the outer silhouette’s top toward a point. No mirrored-down overlay.
  * @param {ReturnType<typeof parsePaths>} piecePaths
@@ -481,7 +510,10 @@ function buildSvg({ piecePaths, gradients, color, label, code }) {
   // Mutate copies so white/black runs don't share path edits.
   const paths = piecePaths.map((p) => ({ ...p, bbox: { ...p.bbox } }));
 
-  if (code === "K") enlargeKingCollar(paths);
+  if (code === "K") {
+    enlargeKingCollar(paths);
+    taperKingCrown(paths);
+  }
   if (code === "B") sharpenBishopHead(paths);
 
   let minX = Infinity;

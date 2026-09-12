@@ -61,7 +61,7 @@ export interface SettingsState {
   color: ColorChoice;
   difficulty: number;
   uncapped: boolean;
-  /** Thinking time in seconds for uncapped mode (1–60). */
+  /** Thinking time in seconds for uncapped mode (1–180). */
   thinkTimeSec: number;
 }
 
@@ -107,8 +107,8 @@ function createGameStore(): GameStore {
   const history = ref<string[]>([]);
 
   const settings = reactive<SettingsState>({
-    color: getColorChoice() || "random",
-    difficulty: getDifficulty() ?? 3,
+    color: getColorChoice() || "white",
+    difficulty: getDifficulty() ?? 4,
     uncapped: getUncapped(),
     thinkTimeSec: Math.round((getThinkTimeMs() ?? DEFAULT_THINK_TIME_MS) / 1000),
   });
@@ -152,7 +152,7 @@ function createGameStore(): GameStore {
   }
 
   function updateThinkingStatus(): void {
-    if (!status.busy || thinkingStartedAt === null) return;
+    if (!status.busy || thinkingStartedAt === null || !settings.uncapped) return;
     status.text = formatThinkingStatus(lastSearchInfo, performance.now() - thinkingStartedAt);
   }
 
@@ -248,9 +248,11 @@ function createGameStore(): GameStore {
       status.busy = true;
       lastSearchInfo = null;
       thinkingStartedAt = performance.now();
-      status.text = formatThinkingStatus(null, 0);
-      if (thinkingTimer) clearInterval(thinkingTimer);
-      thinkingTimer = setInterval(updateThinkingStatus, 200);
+      if (settings.uncapped) {
+        status.text = formatThinkingStatus(null, 0);
+        if (thinkingTimer) clearInterval(thinkingTimer);
+        thinkingTimer = setInterval(updateThinkingStatus, 200);
+      }
     } else {
       status.busy = false;
       if (thinkingTimer) {
@@ -312,7 +314,7 @@ function createGameStore(): GameStore {
 
     try {
       game = Game.fromSaved(savedState as Parameters<typeof Game.fromSaved>[0], {
-        difficulty: savedDifficulty ?? 3,
+        difficulty: savedDifficulty ?? 4,
         uncapped: getUncapped(),
         thinkTimeMs: getThinkTimeMs() ?? DEFAULT_THINK_TIME_MS,
         onUpdate: syncUIWithGame,
@@ -338,7 +340,7 @@ function createGameStore(): GameStore {
   async function newGame(): Promise<boolean> {
     if (isProcessingMove) return false;
     const started = await initializeGame();
-    if (started) useToast().info(getT().game.newGameStarted);
+    if (started) useToast().info(getT().game.newGameStarted, { position: "bottom-right" });
     return started;
   }
 
@@ -478,7 +480,7 @@ function createGameStore(): GameStore {
   }
 
   function setDifficultyChoice(level: number): void {
-    const clamped = Math.max(1, Math.min(6, Number(level) || 3));
+    const clamped = Math.max(1, Math.min(6, Number(level) || 4));
     settings.difficulty = clamped;
     setDifficulty(clamped);
     if (game) game.setDifficulty(clamped);

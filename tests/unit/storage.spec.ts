@@ -49,11 +49,11 @@ describe("Storage", () => {
       expect(getTheme()).toBe("system");
     });
 
-    it("rejects corrupt stored theme and syncs vanduo key", () => {
+    it("rejects corrupt stored theme and syncs sdc-theme-preference", () => {
       localStorage.setItem("sdc-theme", "neon");
       expect(getTheme()).toBe("system");
       setTheme("dark");
-      expect(localStorage.getItem("vanduo-theme-preference")).toBe("dark");
+      expect(localStorage.getItem("sdc-theme-preference")).toBe("dark");
     });
   });
 
@@ -108,7 +108,7 @@ describe("Storage", () => {
       expect(getThinkTimeMs()).toBe(DEFAULT_THINK_TIME_MS);
       setThinkTimeMs(500);
       expect(getThinkTimeMs()).toBe(MIN_THINK_TIME_MS);
-      setThinkTimeMs(99_000);
+      setThinkTimeMs(200_000);
       expect(getThinkTimeMs()).toBe(MAX_THINK_TIME_MS);
       localStorage.setItem("sdc-think-time-ms", "nope");
       expect(getThinkTimeMs()).toBeNull();

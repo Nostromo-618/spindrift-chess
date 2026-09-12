@@ -26,9 +26,71 @@ export type ChangelogLocale = "en" | "lt";
 /** Spindrift Chess release notes (English). */
 export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: "v1.2.2",
+    date: "September 12, 2026",
+    latest: true,
+    columns: [
+      {
+        title: "Piece artwork",
+        groups: [
+          {
+            title: "1.2.2",
+            items: [
+              {
+                icon: "ph-crown",
+                title: "Piece graphics",
+                body: "Clearer king so it reads apart from a pawn; light and dark outlines aligned. Bishops lost the down-pointing mitre overlay, and the head is a bit edgier (both colours).",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Header & locale",
+        groups: [
+          {
+            title: "1.2.2",
+            items: [
+              {
+                icon: "ph-translate",
+                title: "Locale morph toggle",
+                body: "Language switching uses a Mode Toggle morph in the header (flag + EN/LT) on mobile and desktop, replacing the older segmented pills.",
+              },
+              {
+                icon: "ph-text-aa",
+                title: "Compact header title",
+                body: "Slightly smaller title text; the rook brand icon stays a fixed ~28px so it does not shrink with the type. On narrow phones, header padding and the locale toggle tighten so Lithuanian Spindrift Šachmatai stays on one line when possible; only very narrow screens stack Šachmatai under Spindrift, with a little vertical gap.",
+              },
+              {
+                icon: "ph-palette",
+                title: "Button contrast",
+                body: "New Game / Undo are a touch shorter. Active Play-as segments use on-primary text so dark-mode amber fills stay readable.",
+              },
+              {
+                icon: "ph-squares-four",
+                title: "Board chrome",
+                body: "Board outline is a touch thinner, with slightly rounder corners.",
+              },
+              {
+                icon: "ph-sliders-horizontal",
+                title: "Defaults & thinking",
+                body: "First visit defaults to strength 4 and Play as White. Detailed thinking (depth / nodes / time) shows only in uncapped mode; on mobile it sits under New Game. Uncapped think time goes up to 180 seconds.",
+              },
+              {
+                icon: "ph-bell",
+                title: "Bottom toasts",
+                body: "Notifications use vd3 bottom-right placement on desktop and mobile.",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "v1.2.1",
     date: "August 14, 2026",
-    latest: true,
+    latest: false,
     columns: [
       {
         title: "UI polish",
@@ -163,9 +225,66 @@ export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
 /** Spindrift Chess release notes (Lithuanian). */
 export const LT_CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: "v1.2.2",
+    date: "2026 m. rugsėjo 12 d.",
+    latest: true,
+    columns: [
+      {
+        title: "Figūrų dizainas",
+        groups: [
+          {
+            title: "1.2.2",
+            items: [
+              {
+                icon: "ph-crown",
+                title: "Figūrų grafika",
+                body: "Aiškesnis karalius, kad skirtųsi nuo pėstininko; sulyginti šviesių ir tamsių figūrų kontūrai. Rikiams nuimtas žemyn nukreiptas mitros sluoksnis, galva šiek tiek aštresnė (abi spalvos).",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Antraštė ir kalba",
+        groups: [
+          {
+            title: "1.2.2",
+            items: [
+              {
+                icon: "ph-translate",
+                title: "Kalbos morph perjungiklis",
+                body: "Kalbos perjungimas antraštėje naudoja Mode Toggle morph (vėliava + EN/LT) mobiliame ir darbalaukio rodinyje, vietoj senojo segmentuoto valdymo.",
+              },
+              {
+                icon: "ph-text-aa",
+                title: "Kompaktiškesnė antraštė",
+                body: "Šiek tiek mažesnis pavadinimo šriftas; bokšto prekės ženklo ikona lieka fiksuota ~28px, kad nesumažėtų kartu su tekstu.",
+              },
+              {
+                icon: "ph-palette",
+                title: "Mygtukų kontrastas",
+                body: "„Naujas žaidimas“ / „Atšaukti“ šiek tiek žemesni. Aktyvūs „Žaisti kaip“ segmentai naudoja on-primary tekstą, kad tamsioje temoje gintarinis užpildas liktų skaitomas.",
+              },
+              {
+                icon: "ph-sliders-horizontal",
+                title: "Numatytosios reikšmės ir mąstymas",
+                body: "Pirmą kartą stiprumas 4, žaisti kaip baltieji. Detalus mąstymas (gylis / mazgai / laikas) tik be apribojimų; mobiliajame — po „Naujas žaidimas“. Mąstymo laikas iki 180 s.",
+              },
+              {
+                icon: "ph-bell",
+                title: "Pranešimai apačioje",
+                body: "Pranešimai naudoja vd3 bottom-right poziciją darbalaukyje ir mobiliajame.",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "v1.2.1",
     date: "2026 m. rugpjūčio 14 d.",
-    latest: true,
+    latest: false,
     columns: [
       {
         title: "Sąsajos patobulinimai",

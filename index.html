@@ -16,12 +16,12 @@
     <link rel="icon" href="%BASE_URL%favicon.svg" type="image/svg+xml" />
 
     <!-- Apply the persisted theme before first paint to avoid a flash of the wrong theme.
-       vd3's theme layer reads the same `vanduo-theme-preference` key and takes over on mount. -->
+       Matches vd3's sdc-theme-preference key (storagePrefix "sdc-"); sdc-theme is the
+       legacy app-owned parallel key. -->
     <script>
       (function () {
         try {
-          var p =
-            localStorage.getItem("vanduo-theme-preference") || localStorage.getItem("sdc-theme");
+          var p = localStorage.getItem("sdc-theme-preference") || localStorage.getItem("sdc-theme");
           if (p === "light" || p === "dark") {
             document.documentElement.setAttribute("data-theme", p);
           }

@@ -2,7 +2,9 @@
 
 ## Purpose
 
-TBD - created by archiving change strengthen-aurora-engine. Update Purpose after archive.
+Defines the six capped difficulty levels (depth/time policies), CPU-light
+constraints for levels 1–3, time-managed search for 4–6, and optional uncapped
+human-play mode with a 1–180s think-time control.
 
 ## Requirements
 
@@ -66,7 +68,8 @@ The product MAY expose an uncapped strength mode for human play. When uncapped
 is enabled, the engine SHALL use the level-6 search policy with no per-level
 depth cap other than a safety ceiling of 56 ply, and SHALL stop when the
 configured per-move thinking time expires. Time SHALL be the binding constraint
-in typical positions.
+in typical positions. The UI think-time control SHALL allow 1–180 seconds
+(default 10 seconds).
 
 #### Scenario: Uncapped respects think time
 
@@ -77,3 +80,8 @@ in typical positions.
 
 - **WHEN** uncapped is disabled
 - **THEN** levels 1–6 keep their existing depth caps and per-level movetime budgets
+
+#### Scenario: Think-time range
+
+- **WHEN** the user adjusts uncapped thinking time
+- **THEN** values are clamped to 1–180 seconds

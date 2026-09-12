@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { acceptDisclaimer } from "../utils/test-utils";
 
 /**
@@ -11,54 +11,106 @@ test.describe("UI Controls", () => {
     await acceptDisclaimer(page);
   });
 
-  // Open vd3's VdThemeCustomizer via the header paint-roller (desktop) or the
-  // mobile offcanvas ("Customize theme").
-  async function openThemeCustomizer(page: Page): Promise<void> {
-    const deskBtn = page.locator(
-      '.header-controls .header-icon-btn[aria-label="Open theme customizer"]',
-    );
-    if (await deskBtn.isVisible()) {
-      await deskBtn.click();
-      return;
-    }
-    await page.locator("#mobile-menu-toggle").click();
-    await page.getByRole("button", { name: "Customize theme" }).click();
-  }
-
   test.describe("Theme Switching", () => {
-    test("should have a theme customizer control", async ({ page }) => {
-      const deskBtn = page.locator(
-        '.header-controls .header-icon-btn[aria-label="Open theme customizer"]',
-      );
-      const mobileToggle = page.locator("#mobile-menu-toggle");
-      expect((await deskBtn.isVisible()) || (await mobileToggle.isVisible())).toBeTruthy();
+    test("should have a theme mode toggle and no customizer", async ({ page }) => {
+      await expect(page.locator("#theme-toggle-btn")).toBeVisible();
+      await expect(page.locator("[data-theme-customizer-trigger]")).toHaveCount(0);
     });
 
-    test("should open the theme customizer panel", async ({ page }) => {
-      await openThemeCustomizer(page);
-      await expect(page.locator(".vd-theme-customizer-panel")).toHaveClass(/is-open/);
-      await expect(page.getByText("Customize Theme")).toBeVisible();
+    test("should lock chrome and primary over prior localStorage", async ({ page }) => {
+      await page.evaluate(() => {
+        localStorage.setItem("sdc-theme-preference", "light");
+        localStorage.setItem("sdc-palette", "fibonacci");
+        localStorage.setItem("sdc-neutral-color", "charcoal");
+        localStorage.setItem("sdc-radius", "0.5");
+        localStorage.setItem("sdc-font-preference", "lato");
+        localStorage.setItem("sdc-primary-color", "violet");
+      });
+      await page.reload();
+
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+      await expect(page.locator("html")).toHaveAttribute("data-palette", "open-color");
+      await expect(page.locator("html")).toHaveAttribute("data-neutral", "stone");
+      await expect(page.locator("html")).toHaveAttribute("data-radius", "0.375");
+      await expect(page.locator("html")).toHaveAttribute("data-font", "ubuntu");
+      await expect(page.locator("html")).toHaveAttribute("data-primary", "black");
+
+      const stored = await page.evaluate(() => ({
+        theme: localStorage.getItem("sdc-theme-preference"),
+        palette: localStorage.getItem("sdc-palette"),
+        neutral: localStorage.getItem("sdc-neutral-color"),
+        radius: localStorage.getItem("sdc-radius"),
+        font: localStorage.getItem("sdc-font-preference"),
+        primary: localStorage.getItem("sdc-primary-color"),
+        vanduoKeys: Object.keys(localStorage).filter((k) => k.startsWith("vanduo-")),
+      }));
+      expect(stored.vanduoKeys).toEqual([]);
+      expect(stored).toMatchObject({
+        theme: "light",
+        palette: "open-color",
+        neutral: "stone",
+        radius: "0.375",
+        font: "ubuntu",
+        primary: "black",
+      });
     });
 
     test("should cycle to Light theme", async ({ page }) => {
-      await page.evaluate(() => localStorage.setItem("vanduo-theme-preference", "system"));
+      await page.evaluate(() => localStorage.setItem("sdc-theme-preference", "system"));
       await page.reload();
       await page.click("#theme-toggle-btn");
       await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     });
 
     test("should cycle to Dark theme", async ({ page }) => {
-      await page.evaluate(() => localStorage.setItem("vanduo-theme-preference", "light"));
+      await page.evaluate(() => localStorage.setItem("sdc-theme-preference", "light"));
       await page.reload();
       await page.click("#theme-toggle-btn");
       await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     });
 
     test("should cycle to System theme", async ({ page }) => {
-      await page.evaluate(() => localStorage.setItem("vanduo-theme-preference", "dark"));
+      await page.evaluate(() => localStorage.setItem("sdc-theme-preference", "dark"));
       await page.reload();
       await page.click("#theme-toggle-btn");
       await expect(page.locator("html")).not.toHaveAttribute("data-theme");
+    });
+  });
+
+  test.describe("Locale Switching", () => {
+    test("should show Mode Toggle morph in the header", async ({ page }) => {
+      const toggle = page.locator(".header-right [data-locale-toggle]");
+      await expect(toggle).toBeVisible();
+      await expect(toggle).toHaveAttribute("aria-label", "Switch to Lithuanian");
+      await expect(page.locator(".app-title-text")).toHaveText("Spindrift Chess");
+    });
+
+    test("should switch UI to Lithuanian and persist locale", async ({ page }) => {
+      const toggle = page.locator(".header-right [data-locale-toggle]");
+      await toggle.click();
+
+      await expect(page.locator(".app-title-text")).toHaveText("Spindrift Šachmatai");
+      await expect(toggle).toHaveAttribute("aria-label", "Perjungti į anglų");
+
+      const stored = await page.evaluate(() => localStorage.getItem("sdc-locale"));
+      expect(stored).toBe("lt");
+    });
+
+    test("should restore Lithuanian after reload", async ({ page }) => {
+      await page.evaluate(() => localStorage.setItem("sdc-locale", "lt"));
+      await page.reload();
+
+      await expect(page.locator(".app-title-text")).toHaveText("Spindrift Šachmatai");
+      await expect(page.locator(".header-right [data-locale-toggle]")).toHaveAttribute(
+        "aria-label",
+        "Perjungti į anglų",
+      );
+    });
+
+    test("should keep locale morph toggle in the header on mobile", async ({ page }) => {
+      await page.setViewportSize({ width: 540, height: 960 });
+      await expect(page.locator(".header-right [data-locale-toggle]")).toBeVisible();
+      await expect(page.locator(".header-menu [data-locale-toggle]")).toHaveCount(0);
     });
   });
 
@@ -71,8 +123,8 @@ test.describe("UI Controls", () => {
       await expect(page.getByText("Computer strength", { exact: true })).toBeVisible();
     });
 
-    test("should default to level 3", async ({ page }) => {
-      await expect(page.locator("#strength-slider")).toHaveValue("3");
+    test("should default to level 4", async ({ page }) => {
+      await expect(page.locator("#strength-slider")).toHaveValue("4");
     });
 
     test("should allow changing difficulty", async ({ page }) => {
@@ -89,7 +141,7 @@ test.describe("UI Controls", () => {
       await expect(page.locator("#strength-slider")).toHaveCount(0);
       await expect(page.locator("#think-time-slider")).toBeVisible();
       await expect(page.locator("#think-time-slider")).toHaveAttribute("min", "1");
-      await expect(page.locator("#think-time-slider")).toHaveAttribute("max", "60");
+      await expect(page.locator("#think-time-slider")).toHaveAttribute("max", "180");
     });
   });
 
@@ -107,12 +159,12 @@ test.describe("UI Controls", () => {
       const blackBtn = page.locator('#color-choice button[data-color="black"]');
       const randomBtn = page.locator('#color-choice button[data-color="random"]');
 
-      await expect(randomBtn).toHaveClass(/vd-is-active/);
-      await expect(whiteBtn).not.toHaveClass(/vd-is-active/);
+      await expect(whiteBtn).toHaveClass(/vd-is-active/);
+      await expect(randomBtn).not.toHaveClass(/vd-is-active/);
 
       await blackBtn.click();
       await expect(blackBtn).toHaveClass(/vd-is-active/);
-      await expect(randomBtn).not.toHaveClass(/vd-is-active/);
+      await expect(whiteBtn).not.toHaveClass(/vd-is-active/);
     });
 
     test("should start game with selected color", async ({ page }) => {

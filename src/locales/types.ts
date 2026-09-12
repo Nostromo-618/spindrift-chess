@@ -1,6 +1,9 @@
 export interface TranslationMap {
   app: {
+    /** Full app name (brand + product), e.g. for copy outside the header. */
     title: string;
+    /** Product word after the immutable brand "Spindrift" (Chess / Šachmatai). */
+    titleProduct: string;
     ready: string;
     initError: string;
     moveError: string;
@@ -10,13 +13,10 @@ export interface TranslationMap {
     aboutAria: string;
     github: string;
     githubAria: string;
-    customize: string;
-    customizeAria: string;
     menuOpen: string;
     menuAria: string;
     localeSwitchEn: string;
     localeSwitchLt: string;
-    localeGroup: string;
   };
   disclaimer: {
     title: string;
@@ -126,18 +126,6 @@ export interface TranslationMap {
   sidePanelFooter: {
     changelogAria: (opts: { version: string }) => string;
     attribution: string;
-  };
-  theme: {
-    customize: string;
-    customizeAria: string;
-    close: string;
-    reset: string;
-    primary: string;
-    neutral: string;
-    radius: string;
-    font: string;
-    colorNames: Record<string, string>;
-    fontNames: Record<string, string>;
   };
   color: {
     white: string;

@@ -2,7 +2,8 @@
 
 ## Purpose
 
-TBD - created by archiving change strengthen-aurora-engine. Update Purpose after archive.
+Defines static evaluation for Spindrift Engine: piece-square tables, material
+and positional terms, and related scoring used by search.
 
 ## Requirements
 

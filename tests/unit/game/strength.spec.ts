@@ -26,7 +26,7 @@ describe("Game strength / uncapped", () => {
     expect(game.moveTimeForDifficulty()).toBe(700);
   });
 
-  it("clamps think time to 1–60 seconds", () => {
+  it("clamps think time to 1–180 seconds", () => {
     const game = new Game({
       playerColor: "white",
       difficulty: 6,
@@ -36,9 +36,9 @@ describe("Game strength / uncapped", () => {
     });
     game.setThinkTimeMs(500);
     expect(game.moveTimeForDifficulty()).toBe(1000);
-    game.setThinkTimeMs(60_000);
-    expect(game.moveTimeForDifficulty()).toBe(60_000);
-    game.setThinkTimeMs(99_000);
-    expect(game.moveTimeForDifficulty()).toBe(60_000);
+    game.setThinkTimeMs(180_000);
+    expect(game.moveTimeForDifficulty()).toBe(180_000);
+    game.setThinkTimeMs(200_000);
+    expect(game.moveTimeForDifficulty()).toBe(180_000);
   });
 });

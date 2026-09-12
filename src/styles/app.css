@@ -74,7 +74,7 @@
   gap: 0.5rem;
   margin: 0;
   min-width: 0;
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.15;
@@ -83,17 +83,32 @@
 
 .app-title-icon {
   flex-shrink: 0;
-  width: 1.35em;
-  height: 1.35em;
+  /* Fixed size so shrinking the title font does not shrink the rook. */
+  width: 28px;
+  height: 28px;
   display: block;
   object-fit: contain;
 }
 
 .app-title-text {
+  /* Inline (not flex) so the word-separating space is not collapsed. */
+  display: inline;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.app-title-sep {
+  white-space: pre;
+  letter-spacing: normal;
+  /* Counter title’s tight letter-spacing so the word break stays visible. */
+  padding-inline: 0.06em;
+}
+
+.app-title-brand,
+.app-title-product {
+  display: inline;
 }
 
 /* Reserve a fixed slot so header height is stable when the AI is thinking. */
@@ -123,100 +138,48 @@
   flex-shrink: 0;
 }
 
-/* ── Locale switcher (segmented with sliding thumb) ──────────────────── */
-.locale-switcher {
-  --lsw-seg-w: 2.8rem;
-  --lsw-overhang: 0.25rem;
-
-  position: relative;
+/* ── Locale switcher (vd3 Mode Toggle morph) ─────────────────────────── */
+.locale-morph-host {
   display: inline-flex;
-  align-items: stretch;
-  gap: 0;
-  padding: 2px;
-  border: 1px solid var(--vd-border-color);
-  border-radius: var(--radius-md);
-  background: var(--vd-bg-secondary);
+  align-items: center;
 }
 
-.locale-switcher-thumb {
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  left: calc(2px - var(--lsw-overhang));
-  width: calc(var(--lsw-seg-w) + var(--lsw-overhang));
-  border-radius: calc(var(--radius-md) - 2px);
-  background: var(--color-primary);
-  box-shadow: var(--vd-shadow-sm);
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.locale-switcher-thumb.is-lt {
-  transform: translateX(var(--lsw-seg-w));
-}
-
-.locale-switcher-option {
-  position: relative;
-  z-index: 1;
+.locale-morph-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  width: var(--lsw-seg-w);
-  min-width: 0;
-  padding: 0.2rem 0.35rem;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
+  min-width: 4.25rem;
+  min-height: 1.85rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 35%, var(--vd-border-color));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--vd-bg-secondary));
+  color: var(--color-primary);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
-  transition: color var(--transition-fast);
+  --vd-morph-wave-color: var(--color-primary);
 }
 
-.locale-switcher-option:hover {
-  color: var(--text-primary);
-}
-
-.locale-switcher-option:focus-visible {
-  color: var(--text-primary);
+.locale-morph-toggle:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
-.locale-switcher-option.active {
-  color: var(--color-primary-contrast);
+.locale-morph-toggle .vd-morph-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
-.locale-switcher-flag {
+.locale-morph-flag {
   display: block;
   width: 1.15em;
   height: 0.8em;
   flex-shrink: 0;
   border-radius: 2px;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
-}
-
-.locale-switcher-code {
-  line-height: 1;
-}
-
-/* Offcanvas locale slot: use same component, slightly larger. */
-.header-menu-locale {
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.25rem 1rem 0.75rem;
-  border-bottom: 1px solid var(--vd-border-color);
-  margin-bottom: 0.5rem;
-}
-
-.header-menu-locale .locale-switcher {
-  --lsw-seg-w: 3.2rem;
-}
-
-.header-menu-locale .locale-switcher-option {
-  font-size: 0.8rem;
-  padding: 0.3rem 0.4rem;
 }
 
 .header-controls {
@@ -348,6 +311,16 @@
   --vd-btn-ring-gap: 0.26rem;
 }
 
+/* Slightly shorter/lighter text than default md; width + icons unchanged. */
+.new-game-action .vd-btn {
+  --vd-btn-padding-y: 0.625rem; /* was 0.8125rem */
+  --vd-btn-font-size: 0.875rem; /* was 1rem (--vd-font-size-base) */
+}
+
+.new-game-action .vd-btn > i {
+  font-size: 1rem; /* keep Phosphor icons at default md size */
+}
+
 .new-game-btn.vd-btn {
   flex: 1;
   justify-content: center;
@@ -420,18 +393,18 @@
   white-space: nowrap;
 }
 
-/* Selected segment: filled primary */
+/* Selected segment: filled primary (same on-primary contrast as .vd-btn-primary) */
 .segmented.vd-btn-group > .vd-btn.vd-is-active {
   z-index: 1;
   background-color: var(--color-primary);
   border-color: var(--color-primary);
-  color: var(--color-white);
+  color: var(--vd-text-on-primary);
 }
 
 .segmented.vd-btn-group > .vd-btn.vd-is-active:hover:not(:disabled) {
   background-color: var(--color-primary-hover);
   border-color: var(--color-primary-hover);
-  color: var(--color-white);
+  color: var(--vd-text-on-primary-hover);
 }
 
 .segmented.vd-btn-group > .vd-btn.vd-is-active:focus-visible {
@@ -494,6 +467,11 @@
 
 .status-thinking .ph-brain {
   margin-right: 0.3rem;
+}
+
+/* Elevated uncapped thinking (between New Game and Play as) — mobile only. */
+.status-bar--elevated {
+  display: none;
 }
 
 .status-detail {
@@ -984,51 +962,6 @@
   }
 }
 
-/* ── Theme customizer: hide vd3's built-in FAB (the header paint-roller opens
-      it via the vd:open-customizer event) and re-anchor the panel as a
-      dropdown directly under that top-right control. ────────────────────── */
-[data-theme-customizer-trigger] {
-  display: none !important;
-}
-
-/* !important is needed to beat vd3's higher-specificity `.is-open` drawer rules;
-   this is a deliberate consumer override of the library component's position.
-   `right` aligns the dropdown's right edge under the header paint-roller (which
-   sits 21px inside the 1200px-max header). */
-body > .vd-theme-customizer-panel {
-  position: fixed !important;
-  top: 68px !important;
-  right: max(1rem, calc((100vw - 1200px) / 2 + 21px)) !important;
-  left: auto !important;
-  bottom: auto !important;
-  width: min(340px, calc(100vw - 2rem)) !important;
-  max-width: min(340px, calc(100vw - 2rem)) !important;
-  max-height: calc(100vh - 88px) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: var(--radius-md) !important;
-  box-shadow: var(--shadow-2xl) !important;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px) !important;
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease,
-    visibility 0.2s ease !important;
-}
-
-body > .vd-theme-customizer-panel.is-open {
-  opacity: 1 !important;
-  visibility: visible !important;
-  transform: translateY(0) !important;
-}
-
-/* Transparent, click-through-to-close overlay so clicking outside dismisses the
-   dropdown (no full-screen dim). */
-body > .vd-theme-customizer-overlay {
-  display: block;
-  background: transparent;
-}
-
 /* ── Responsive ────────────────────────────────────────────────────────── */
 @media (min-width: 992px) {
   .board-size-control-desktop {
@@ -1049,44 +982,91 @@ body > .vd-theme-customizer-overlay {
     order: 2;
   }
 
+  /* Uncapped thinking: elevate under New Game; hide duplicate in status panel. */
+  .status-bar--elevated {
+    display: flex;
+  }
+
+  .status-bar--panel.is-busy {
+    display: none;
+  }
+
   .changelog-columns {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.5rem;
-  }
-
-  /* vd3's VdToastContainer has no placement prop; each toast defaults to
-     top-right. Pin top stacks to the bottom on the stacked-board breakpoint. */
-  .vd-toast-container-top-right,
-  .vd-toast-container-top-left,
-  .vd-toast-container-top-center {
-    top: auto;
-    bottom: 0;
-  }
-
-  .vd-toast-container-top-center .vd-toast {
-    transform: translateY(100%);
-  }
-
-  .vd-toast-container-top-center .vd-toast.is-visible {
-    transform: translateY(0);
-  }
-
-  .vd-toast-container-top-center .vd-toast.is-exiting {
-    transform: translateY(100%);
   }
 }
 
 @media (max-width: 575px) {
   .app-main {
-    padding: 0.75rem;
+    padding: 0.375rem 1px 0.75rem;
+  }
+
+  .app-header {
+    margin-bottom: 0;
+    padding: 0.5rem 0;
+  }
+
+  .app-layout {
+    gap: 1px;
+  }
+
+  .app-aside {
+    /* Give the board the full width while retaining the controls' inset. */
+    padding-inline: calc(0.75rem - 1px);
+    margin-top: 1.5rem;
   }
 
   .app-header-inner {
-    padding: 0 0.75rem;
+    padding: 0 0.45rem;
+    gap: 0.25rem;
+    min-height: 2.4rem;
   }
 
   .app-title {
-    font-size: var(--font-size-lg);
+    gap: 0.25rem;
+    font-size: var(--font-size-base);
+  }
+
+  /* Free horizontal room for LT title when the brain is idle. */
+  .thinking-icon:not(.thinking-icon--active) {
+    width: 0;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  .thinking-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 1.1rem;
+  }
+
+  .header-right {
+    gap: 0;
+  }
+
+  .locale-morph-toggle {
+    min-width: 3.1rem;
+    min-height: 1.6rem;
+    padding: 0.1rem 0.25rem;
+    font-size: 0.65rem;
+  }
+
+  .locale-morph-toggle .vd-morph-content {
+    gap: 0.15rem;
+  }
+
+  .locale-morph-flag {
+    width: 0.95em;
+    height: 0.65em;
+  }
+
+  .header-icon-btn,
+  .header-right .vd-theme-switcher-toggle {
+    width: 1.85rem;
+    height: 1.85rem;
+    font-size: 1.05rem;
   }
 
   .header-controls {
@@ -1095,5 +1075,36 @@ body > .vd-theme-customizer-overlay {
 
   .mobile-menu-toggle {
     display: inline-flex;
+  }
+}
+
+/* LT title: pad/gap wins keep one line on ~360–393px; stack only on very narrow. */
+@media (max-width: 320px) {
+  .app-title-text--lt-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    /* Breathing room so “p” descenders don’t collide with “Š”. */
+    gap: 0.28em;
+    line-height: 1.15;
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+  }
+
+  .app-title-text--lt-stack .app-title-sep {
+    display: none;
+  }
+
+  .app-title-text--lt-stack .app-title-brand,
+  .app-title-text--lt-stack .app-title-product {
+    display: block;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .app-title-text--lt-stack .app-title-product {
+    font-size: 0.94em;
+    font-weight: 700;
   }
 }
