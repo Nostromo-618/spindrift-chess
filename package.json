@@ -25,6 +25,7 @@
     "test:full-game": "playwright test --grep 'Full Game Tests'",
     "test:baseline": "vitest run tests/unit/engine/SpindriftBaseline.spec.ts",
     "test:selfplay": "tsx tests/matches/selfplay.ts",
+    "test:compare": "node --import tsx tests/matches/compare.ts",
     "test:perft": "vitest run tests/unit/engine/perft.spec.ts",
     "verify": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test:coverage && pnpm run test:baseline && pnpm run test:selfplay && pnpm run test:e2e:quick",
     "test:all": "pnpm run verify"

@@ -20,6 +20,11 @@ pnpm dev            # http://localhost:5173
 pnpm run verify     # typecheck, lint, format, coverage, baseline, self-play, e2e quick
 ```
 
+Headless comparisons against a Git baseline are available with
+`pnpm run test:compare --baseline-ref <commit>`. See the
+[comparison methodology](tests/matches/README.md) and the
+[levels 4–6 efficiency investigation](docs/engine-efficiency.md).
+
 ## Piece artwork
 
 The original Spindrift pieces are generated from
