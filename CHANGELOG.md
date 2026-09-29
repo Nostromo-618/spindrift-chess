@@ -5,6 +5,25 @@ All notable changes to Spindrift Chess will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-09-30
+
+### Changed
+
+- **Engine efficiency**: Share attack calculations across evaluation terms, precompute piece movement geometry, and avoid redundant king-safety checks for unpinned moves outside check. Evaluation values, move order, and search policies are preserved.
+- **Thinking-time behavior**: Levels 4–6 and uncapped mode retain their existing time budgets. Faster computation can reach a depth cap sooner or search deeper within the same budget. Levels 1–3 retain their depth caps and randomness while benefiting from cheaper shared engine operations.
+
+### Added
+
+- **Headless engine comparisons**: `test:compare` benchmarks the working engine against a Git revision and runs paired engine-versus-engine games, recording search parity, timings, moves, and source fingerprints.
+- **Regression coverage**: Frozen evaluator reference scores, move-legality comparisons, and additional perft checks.
+
+### Performance
+
+- Identical level 4–6 searches completed approximately **2.2–2.6× faster** in the measured workloads on Apple M4 / Node 22. All **216 fixed-depth comparisons** matched moves, scores, and search counters.
+- **36 headless games** completed without crashes or illegal moves. Equal-time play scored 9 wins, 2 draws, and 1 loss; half-time play scored 11 wins, 7 draws, and 6 losses. The smaller level-4 half-time sample did not establish equal strength, so default time limits remain unchanged. See the [full investigation and reproducible results](docs/engine-efficiency.md).
+
+---
+
 ## [1.2.2] - 2026-09-12
 
 ### Changed

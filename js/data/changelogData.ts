@@ -26,9 +26,41 @@ export type ChangelogLocale = "en" | "lt";
 /** Spindrift Chess release notes (English). */
 export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: "v1.3.0",
+    date: "September 30, 2026",
+    latest: true,
+    columns: [
+      {
+        title: "Engine performance",
+        groups: [
+          {
+            title: "1.3.0",
+            items: [
+              {
+                icon: "ph-lightning",
+                title: "Faster computation",
+                body: "In benchmarks, levels 4–6 completed identical searches about 2.2–2.6 times faster, with the same evaluation and search rules.",
+              },
+              {
+                icon: "ph-sliders-horizontal",
+                title: "Thinking times preserved",
+                body: "Levels 4–6 and uncapped mode keep their existing thinking-time limits. Faster computation lets the engine explore more moves within the same time.",
+              },
+              {
+                icon: "ph-brain",
+                title: "Levels 1–3",
+                body: "Search depths and playing variety are unchanged. Shared engine calculations are more efficient.",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "v1.2.2",
     date: "September 12, 2026",
-    latest: true,
+    latest: false,
     columns: [
       {
         title: "Piece artwork",
@@ -225,9 +257,41 @@ export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
 /** Spindrift Chess release notes (Lithuanian). */
 export const LT_CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: "v1.3.0",
+    date: "2026 m. rugsėjo 30 d.",
+    latest: true,
+    columns: [
+      {
+        title: "Variklio našumas",
+        groups: [
+          {
+            title: "1.3.0",
+            items: [
+              {
+                icon: "ph-lightning",
+                title: "Spartesni skaičiavimai",
+                body: "Bandymuose variklis tas pačias 4–6 lygių ėjimų paieškas atliko maždaug 2,2–2,6 karto sparčiau. Vertinimo ir paieškos taisyklės nepakeistos.",
+              },
+              {
+                icon: "ph-sliders-horizontal",
+                title: "Mąstymo laikas nepakeistas",
+                body: "4–6 lygių ir neriboto režimo mąstymo laiko ribos liko tokios pačios. Spartesni skaičiavimai leidžia per tą patį laiką išnagrinėti daugiau ėjimų.",
+              },
+              {
+                icon: "ph-brain",
+                title: "1–3 lygiai",
+                body: "Paieškos gylis ir žaidimo įvairovė nepakeisti. Bendri variklio skaičiavimai atliekami efektyviau.",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "v1.2.2",
     date: "2026 m. rugsėjo 12 d.",
-    latest: true,
+    latest: false,
     columns: [
       {
         title: "Figūrų dizainas",
