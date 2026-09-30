@@ -47,7 +47,7 @@ export const LT: TranslationMap = {
   game: {
     newGame: "Naujas žaidimas",
     newGameStarted: "Naujas žaidimas pradėtas",
-    undo: "Atšaukti",
+    undo: "Atšaukti Ėjimą",
     undoTitle: "Atšaukti paskutinį savo ėjimą ir kompiuterio atsakymą",
     playAs: "Žaisti kaip",
     uncapped: "Kompiuterio stiprumas be apribojimų",

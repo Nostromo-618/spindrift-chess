@@ -22,10 +22,22 @@ async function freshPage(page: Page): Promise<void> {
 }
 
 test.describe("Disclaimer Modal", () => {
-  test("shows on first visit", async ({ page }) => {
+  test("shows a language switch that translates the disclaimer", async ({ page }) => {
     await freshPage(page);
 
     const modal = page.locator("#disclaimer-modal");
+    await expect(modal).toBeVisible();
+    const localeToggle = page.locator(".disclaimer-locale [data-locale-toggle]");
+    await expect(localeToggle).toBeVisible();
+    await expect(page.locator(".header-right [data-locale-toggle]")).toHaveCount(0);
+    await expect(page.locator("#disclaimer-accept-btn")).toContainText("Accept & Play");
+
+    await localeToggle.click();
+
+    await expect(page.locator("#disclaimer-accept-btn")).toContainText("Sutinku ir žaisti");
+    await expect(modal).toBeVisible();
+
+    await page.keyboard.press("Escape");
     await expect(modal).toBeVisible();
   });
 

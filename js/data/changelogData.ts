@@ -51,6 +51,31 @@ export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
                 title: "Levels 1–3",
                 body: "Search depths and playing variety are unchanged. Shared engine calculations are more efficient.",
               },
+              {
+                icon: "ph-timer",
+                title: "Uncapped mode",
+                body: "Uncapped mode stays bound to the think-time slider, up to 56 ply, and is not a separate strength level. Its time limit is unchanged, so faster computation can search deeper within that same time.",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Welcome and header",
+        groups: [
+          {
+            title: "1.3.0",
+            items: [
+              {
+                icon: "ph-translate",
+                title: "Read the welcome in either language",
+                body: "The first-visit screen includes the EN/LT switch, so the terms can be read in English or Lithuanian before you accept.",
+              },
+              {
+                icon: "ph-play",
+                title: "A new visit is ready to play",
+                body: "With no saved game, the board starts as a real game. A fresh visit plays White, and the first move does not need New Game.",
+              },
             ],
           },
         ],
@@ -281,6 +306,31 @@ export const LT_CHANGELOG_ENTRIES: ChangelogEntry[] = [
                 icon: "ph-brain",
                 title: "1–3 lygiai",
                 body: "Paieškos gylis ir žaidimo įvairovė nepakeisti. Bendri variklio skaičiavimai atliekami efektyviau.",
+              },
+              {
+                icon: "ph-timer",
+                title: "Neribotas režimas",
+                body: "Neribotas režimas ir toliau priklauso nuo mąstymo laiko slankiklio, iki 56 pusės ėjimų, ir nėra atskiras stiprumo lygis. Laiko riba nepakeista, todėl spartesni skaičiavimai leidžia per tą patį laiką ieškoti giliau.",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Pasisveikinimas ir antraštė",
+        groups: [
+          {
+            title: "1.3.0",
+            items: [
+              {
+                icon: "ph-translate",
+                title: "Sąlygas galima skaityti abiem kalbomis",
+                body: "Pirmame pasisveikinimo lange yra EN/LT jungiklis, todėl sąlygas galima perskaityti angliškai arba lietuviškai prieš sutinkant.",
+              },
+              {
+                icon: "ph-play",
+                title: "Naujas apsilankymas iškart žaidžiamas",
+                body: "Jei išsaugoto žaidimo nėra, lenta prasideda tikru žaidimu. Pirmą kartą žaidžiate baltaisiais, o pirmajam ėjimui nereikia spausti „Naujas žaidimas“.",
               },
             ],
           },

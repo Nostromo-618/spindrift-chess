@@ -131,6 +131,14 @@ an inline SVG flag and an EN or LT label. The locale SHALL persist under
 - **AND** the toggle morphs to show the Lithuanian flag and LT label
 - **AND** the locale is persisted to localStorage under `sdc-locale`
 
+#### Scenario: First-visit disclaimer
+
+- **WHEN** the first-visit disclaimer is open
+- **THEN** the locale morph toggle is shown on the disclaimer
+- **AND** it is not also shown in the header
+- **WHEN** the visitor activates that toggle
+- **THEN** the disclaimer text updates to the other language immediately
+
 ### Requirement: Phosphor game-end icons
 
 The `GameEndModal` SHALL use Phosphor font icons instead of Unicode emojis for
@@ -218,3 +226,25 @@ persisted under `sdc-difficulty` and `sdc-color`.
 
 - **WHEN** a returning user has `sdc-difficulty` and/or `sdc-color` set
 - **THEN** those stored values are restored instead of the first-visit defaults
+
+### Requirement: First load starts a playable game
+
+When no saved game is restored, the app SHALL start a real game with the
+current Play-as color. A fresh visit defaults to White, so the human can move
+immediately and the status SHALL show that it is their move. This automatic
+start SHALL NOT show the New Game toast. Square clicks SHALL move pieces.
+A saved game SHALL be restored instead of starting a new one. Play as chosen
+after this start SHALL still apply on the next New Game.
+
+#### Scenario: Fresh load is playable as White
+
+- **WHEN** the app loads with no `sdc-game` entry and Play as White
+- **THEN** the board shows the 32 starting pieces
+- **AND** the status says it is the player's move
+- **AND** clicking e2 then e4 moves the white pawn
+- **AND** no New Game toast is shown
+
+#### Scenario: Saved game is restored
+
+- **WHEN** a saved game exists in `sdc-game`
+- **THEN** the board shows that saved position instead of a new game
