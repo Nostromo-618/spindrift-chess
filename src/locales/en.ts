@@ -48,7 +48,7 @@ export const EN: TranslationMap = {
   game: {
     newGame: "New Game",
     newGameStarted: "New game started",
-    undo: "Undo",
+    undo: "Undo Move",
     undoTitle: "Take back your last move and the computer's reply",
     playAs: "Play as",
     uncapped: "Uncapped computer strength",

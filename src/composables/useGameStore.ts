@@ -29,6 +29,7 @@ import {
   type SerializedGame,
 } from "../../js/storage.js";
 import type { SearchInfo } from "../../js/engineAdapter.js";
+import { boardToMap, createStartingBoard } from "../../js/engine/Board.js";
 import type { BoardView } from "../../js/ui/BoardView.js";
 import { getT, translateDrawReason } from "./useI18n";
 
@@ -159,6 +160,7 @@ function createGameStore(): GameStore {
   function attachBoard(instance: BoardView): void {
     boardView = instance;
     if (game) renderCurrentBoard();
+    else renderIdleBoard();
   }
 
   function detachBoard(): void {
@@ -174,6 +176,22 @@ function createGameStore(): GameStore {
       legalMoves: [],
       lastMove: snapshot.lastMove,
       checkedKingSquare: game.getCheckedKingSquare(),
+    });
+  }
+
+  /** Starting position shown before New Game. Random stays White until play starts. */
+  function idlePerspective(): "white" | "black" {
+    return settings.color === "black" ? "black" : "white";
+  }
+
+  function renderIdleBoard(): void {
+    if (game || !boardView) return;
+    boardView.render(boardToMap(createStartingBoard()), {
+      perspective: idlePerspective(),
+      selected: null,
+      legalMoves: [],
+      lastMove: null,
+      checkedKingSquare: null,
     });
   }
 
@@ -333,7 +351,8 @@ function createGameStore(): GameStore {
     } catch (error) {
       console.error("Game restore error:", error);
       clearGame();
-      status.text = getT().app.ready;
+      game = null;
+      await initializeGame();
     }
   }
 
@@ -477,6 +496,7 @@ function createGameStore(): GameStore {
     if (!["white", "black", "random"].includes(color)) return;
     settings.color = color;
     setColorChoice(color);
+    if (!game) renderIdleBoard();
   }
 
   function setDifficultyChoice(level: number): void {
@@ -517,7 +537,7 @@ function createGameStore(): GameStore {
     if (savedGame) {
       await restoreGame(savedGame);
     } else {
-      status.text = getT().app.ready;
+      await initializeGame();
     }
   }
 

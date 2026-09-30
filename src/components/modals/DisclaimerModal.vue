@@ -8,6 +8,7 @@
  */
 import { setDisclaimerAccepted } from "../../../js/storage.js";
 import { VdModal, VdButton } from "@vanduo-oss/vd3";
+import LocaleMorphToggle from "../LocaleMorphToggle.vue";
 import { useModals } from "../../composables/useModals";
 import { useI18n } from "../../composables/useI18n";
 
@@ -27,6 +28,9 @@ function accept(): void {
   <VdModal :open="disclaimerOpen" :close-on-backdrop="false" @update:open="() => {}">
     <template #header>
       <div class="disclaimer-modal-heading">
+        <div class="disclaimer-locale">
+          <LocaleMorphToggle />
+        </div>
         <span class="disclaimer-modal-icon">
           <img
             class="disclaimer-modal-icon-img"

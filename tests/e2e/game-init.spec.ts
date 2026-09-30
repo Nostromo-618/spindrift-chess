@@ -16,6 +16,27 @@ test.describe("Game Initialization", () => {
     await expect(squares).toHaveCount(64);
   });
 
+  test("should start a playable game as White before New Game", async ({ page }) => {
+    await expect(page.locator(".chess-piece.has-piece")).toHaveCount(32);
+    await expect(page.locator('.chess-square[data-square="e2"] .chess-piece')).toHaveAttribute(
+      "data-piece",
+      "wP",
+    );
+    await expect(page.locator("#status-text")).toContainText("Your move");
+    await expect(page.locator(".vd-toast")).toHaveCount(0);
+
+    await page.click('.chess-square[data-square="e2"]');
+    await page.click('.chess-square[data-square="e4"]');
+
+    await expect(page.locator('.chess-square[data-square="e4"] .chess-piece')).toHaveAttribute(
+      "data-piece",
+      "wP",
+    );
+    await expect(page.locator('.chess-square[data-square="e2"] .chess-piece')).not.toHaveClass(
+      /has-piece/,
+    );
+  });
+
   test("should show initial status message", async ({ page }) => {
     const status = page.locator("#status-text");
     await expect(status).not.toBeEmpty();

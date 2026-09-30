@@ -9,7 +9,7 @@ import { useModals } from "../composables/useModals";
 import { useI18n } from "../composables/useI18n";
 
 const { status } = useGameStore();
-const { openDisclaimer } = useModals();
+const { openDisclaimer, disclaimerOpen } = useModals();
 const { t, locale } = useI18n();
 
 const menuOpen = ref(false);
@@ -47,8 +47,9 @@ function fromMenu(action: () => void): void {
       </h1>
 
       <div class="header-right">
-        <!-- Locale: vd3 Mode Toggle morph — always in the header (mobile + desktop). -->
-        <LocaleMorphToggle />
+        <!-- Locale stays in the header except while the first-visit disclaimer
+             owns the only mounted copy, so the morph cannot fall out of sync. -->
+        <LocaleMorphToggle v-if="!disclaimerOpen" />
 
         <!-- Theme mode toggle: always visible in the header (both breakpoints). -->
         <VdThemeSwitcher id="theme-toggle-btn" :menu="false" />

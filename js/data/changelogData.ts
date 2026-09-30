@@ -26,9 +26,66 @@ export type ChangelogLocale = "en" | "lt";
 /** Spindrift Chess release notes (English). */
 export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: "v1.3.0",
+    date: "September 30, 2026",
+    latest: true,
+    columns: [
+      {
+        title: "Engine performance",
+        groups: [
+          {
+            title: "1.3.0",
+            items: [
+              {
+                icon: "ph-lightning",
+                title: "Faster computation",
+                body: "In benchmarks, levels 4–6 completed identical searches about 2.2–2.6 times faster, with the same evaluation and search rules.",
+              },
+              {
+                icon: "ph-sliders-horizontal",
+                title: "Thinking times preserved",
+                body: "Levels 4–6 and uncapped mode keep their existing thinking-time limits. Faster computation lets the engine explore more moves within the same time.",
+              },
+              {
+                icon: "ph-brain",
+                title: "Levels 1–3",
+                body: "Search depths and playing variety are unchanged. Shared engine calculations are more efficient.",
+              },
+              {
+                icon: "ph-timer",
+                title: "Uncapped mode",
+                body: "Uncapped mode stays bound to the think-time slider, up to 56 ply, and is not a separate strength level. Its time limit is unchanged, so faster computation can search deeper within that same time.",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Welcome and header",
+        groups: [
+          {
+            title: "1.3.0",
+            items: [
+              {
+                icon: "ph-translate",
+                title: "Read the welcome in either language",
+                body: "The first-visit screen includes the EN/LT switch, so the terms can be read in English or Lithuanian before you accept.",
+              },
+              {
+                icon: "ph-play",
+                title: "A new visit is ready to play",
+                body: "With no saved game, the board starts as a real game. A fresh visit plays White, and the first move does not need New Game.",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "v1.2.2",
     date: "September 12, 2026",
-    latest: true,
+    latest: false,
     columns: [
       {
         title: "Piece artwork",
@@ -225,9 +282,66 @@ export const EN_CHANGELOG_ENTRIES: ChangelogEntry[] = [
 /** Spindrift Chess release notes (Lithuanian). */
 export const LT_CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: "v1.3.0",
+    date: "2026 m. rugsėjo 30 d.",
+    latest: true,
+    columns: [
+      {
+        title: "Variklio našumas",
+        groups: [
+          {
+            title: "1.3.0",
+            items: [
+              {
+                icon: "ph-lightning",
+                title: "Spartesni skaičiavimai",
+                body: "Bandymuose variklis tas pačias 4–6 lygių ėjimų paieškas atliko maždaug 2,2–2,6 karto sparčiau. Vertinimo ir paieškos taisyklės nepakeistos.",
+              },
+              {
+                icon: "ph-sliders-horizontal",
+                title: "Mąstymo laikas nepakeistas",
+                body: "4–6 lygių ir neriboto režimo mąstymo laiko ribos liko tokios pačios. Spartesni skaičiavimai leidžia per tą patį laiką išnagrinėti daugiau ėjimų.",
+              },
+              {
+                icon: "ph-brain",
+                title: "1–3 lygiai",
+                body: "Paieškos gylis ir žaidimo įvairovė nepakeisti. Bendri variklio skaičiavimai atliekami efektyviau.",
+              },
+              {
+                icon: "ph-timer",
+                title: "Neribotas režimas",
+                body: "Neribotas režimas ir toliau priklauso nuo mąstymo laiko slankiklio, iki 56 pusės ėjimų, ir nėra atskiras stiprumo lygis. Laiko riba nepakeista, todėl spartesni skaičiavimai leidžia per tą patį laiką ieškoti giliau.",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Pasisveikinimas ir antraštė",
+        groups: [
+          {
+            title: "1.3.0",
+            items: [
+              {
+                icon: "ph-translate",
+                title: "Sąlygas galima skaityti abiem kalbomis",
+                body: "Pirmame pasisveikinimo lange yra EN/LT jungiklis, todėl sąlygas galima perskaityti angliškai arba lietuviškai prieš sutinkant.",
+              },
+              {
+                icon: "ph-play",
+                title: "Naujas apsilankymas iškart žaidžiamas",
+                body: "Jei išsaugoto žaidimo nėra, lenta prasideda tikru žaidimu. Pirmą kartą žaidžiate baltaisiais, o pirmajam ėjimui nereikia spausti „Naujas žaidimas“.",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
     version: "v1.2.2",
     date: "2026 m. rugsėjo 12 d.",
-    latest: true,
+    latest: false,
     columns: [
       {
         title: "Figūrų dizainas",

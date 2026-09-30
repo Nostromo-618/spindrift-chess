@@ -119,30 +119,7 @@ export function generatePseudoLegalMoves(state: RulesState): Move[] {
  * Filter pseudo-legal moves to legal ones (king not left in check).
  */
 export function generateLegalMoves(state: RulesState): Move[] {
-  const pseudoMoves = generatePseudoLegalMoves(state);
-  const legal: Move[] = [];
-
-  const board = state.board;
-  const moverColor = state.activeColor;
-  const enemy = oppositeColor(moverColor);
-  // Find the mover's king once (it doesn't move except for its own moves, which
-  // the legality check handles), instead of scanning per pseudo-move.
-  const kingCode = moverColor === "white" ? "wK" : "bK";
-  let kingIndex = -1;
-  for (let i = 0; i < 64; i += 1) {
-    if (board[i] === kingCode) {
-      kingIndex = i;
-      break;
-    }
-  }
-
-  for (const move of pseudoMoves) {
-    if (!moveLeavesKingInCheck(board, move, moverColor, enemy, kingIndex)) {
-      legal.push(move);
-    }
-  }
-
-  return legal;
+  return filterLegalMoves(state, generatePseudoLegalMoves(state));
 }
 
 /**
@@ -153,28 +130,80 @@ export function generateLegalMoves(state: RulesState): Move[] {
  * generatePseudoLegalMoves down to noisy moves.
  */
 export function generateCaptureMoves(state: RulesState): Move[] {
-  const pseudoMoves = generateNoisyPseudoMoves(state);
-  const legal: Move[] = [];
+  return filterLegalMoves(state, generateNoisyPseudoMoves(state));
+}
 
+/**
+ * Outside check, an ordinary move can expose its king only by moving an
+ * absolutely pinned piece. Determine those pins once instead of making,
+ * scanning attacks, and unmaking every pseudo-legal move. King moves and en
+ * passant still need the complete test: their changed king square or second
+ * vacated square cannot be covered by the ordinary pin rule.
+ */
+function filterLegalMoves(state: RulesState, pseudoMoves: Move[]): Move[] {
+  if (pseudoMoves.length === 0) return pseudoMoves;
+  const legal: Move[] = [];
   const board = state.board;
   const moverColor = state.activeColor;
   const enemy = oppositeColor(moverColor);
   const kingCode = moverColor === "white" ? "wK" : "bK";
-  let kingIndex = -1;
-  for (let i = 0; i < 64; i += 1) {
-    if (board[i] === kingCode) {
-      kingIndex = i;
-      break;
-    }
-  }
+  const kingIndex = board.indexOf(kingCode);
+
+  // For very small noisy lists, the original direct tests cost less than
+  // setting up a pin map. Missing kings retain the original rejection path.
+  const usePins =
+    pseudoMoves.length > 3 && kingIndex >= 0 && !squareIndexAttackedBy(board, kingIndex, enemy);
+  const pins = usePins ? findAbsolutePins(board, kingIndex, moverColor) : null;
 
   for (const move of pseudoMoves) {
+    if (pins && move.piece[1] !== "K" && !move.isEnPassant) {
+      if ((pins[0] | pins[1]) === 0) {
+        legal.push(move);
+        continue;
+      }
+      const fromIndex = algebraicToIndex(move.from);
+      if ((pins[fromIndex >>> 5] & (1 << (fromIndex & 31))) === 0) {
+        legal.push(move);
+        continue;
+      }
+    }
     if (!moveLeavesKingInCheck(board, move, moverColor, enemy, kingIndex)) {
       legal.push(move);
     }
   }
-
   return legal;
+}
+
+/** Two 32-bit masks avoid BigInt or a 64-cell allocation for the pin map. */
+function findAbsolutePins(board: Board, kingIndex: number, color: Color): [number, number] {
+  const pins: [number, number] = [0, 0];
+  const kingFile = kingIndex % 8;
+  const kingRank = (kingIndex - kingFile) / 8;
+  for (let direction = 0; direction < 8; direction++) {
+    const diagonal = direction >= 4;
+    const [df, dr] = diagonal ? DIAG_DIRS[direction - 4] : ORTHO_DIRS[direction];
+    let file = kingFile + df;
+    let rank = kingRank + dr;
+    let blocker = -1;
+    while (file >= 0 && file <= 7 && rank >= 0 && rank <= 7) {
+      const index = rank * 8 + file;
+      const piece = bAt(board, index);
+      if (piece) {
+        if (getColorOf(piece) === color) {
+          if (blocker >= 0) break;
+          blocker = index;
+        } else {
+          if (blocker >= 0 && (piece[1] === "Q" || piece[1] === (diagonal ? "B" : "R"))) {
+            pins[blocker >>> 5] |= 1 << (blocker & 31);
+          }
+          break;
+        }
+      }
+      file += df;
+      rank += dr;
+    }
+  }
+  return pins;
 }
 
 /**

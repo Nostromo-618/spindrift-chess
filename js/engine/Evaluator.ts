@@ -16,12 +16,105 @@
  * remaining non-pawn material (game phase).
  */
 
-import { getColorOf, oppositeColor } from "./Board.js";
-import type { Board, BoardSquare, Color, Piece, PieceType, RulesState } from "./types.js";
+import { getColorOf } from "./Board.js";
+import type { Board, BoardSquare, Color, PieceType, RulesState } from "./types.js";
 
 /** Board cell read that collapses undefined (noUncheckedIndexedAccess). */
 function bAt(board: Board, i: number): BoardSquare {
   return board[i] ?? null;
+}
+
+// Geometry is independent of the position. Each sliding ray includes every
+// square through the edge; occupied squares terminate it during evaluation.
+const KNIGHT_STEPS = [
+  [1, 2],
+  [2, 1],
+  [2, -1],
+  [1, -2],
+  [-1, -2],
+  [-2, -1],
+  [-2, 1],
+  [-1, 2],
+] as const;
+const DIAGONAL_STEPS = [
+  [1, 1],
+  [1, -1],
+  [-1, 1],
+  [-1, -1],
+] as const;
+const ORTHOGONAL_STEPS = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+] as const;
+const KING_STEPS = [...DIAGONAL_STEPS, ...ORTHOGONAL_STEPS];
+
+function targetsFrom(index: number, steps: readonly (readonly [number, number])[]): number[] {
+  const targets: number[] = [];
+  for (const [df, dr] of steps) {
+    const file = (index % 8) + df;
+    const rank = Math.floor(index / 8) + dr;
+    if (file >= 0 && file < 8 && rank >= 0 && rank < 8) targets.push(rank * 8 + file);
+  }
+  return targets;
+}
+
+function raysFrom(index: number, steps: readonly (readonly [number, number])[]): number[][] {
+  return steps.map(([df, dr]) => {
+    const ray: number[] = [];
+    let file = (index % 8) + df;
+    let rank = Math.floor(index / 8) + dr;
+    while (file >= 0 && file < 8 && rank >= 0 && rank < 8) {
+      ray.push(rank * 8 + file);
+      file += df;
+      rank += dr;
+    }
+    return ray;
+  });
+}
+
+const KNIGHT_TARGETS = Array.from({ length: 64 }, (_, i) => targetsFrom(i, KNIGHT_STEPS));
+const KING_TARGETS = Array.from({ length: 64 }, (_, i) => targetsFrom(i, KING_STEPS));
+const BISHOP_RAYS = Array.from({ length: 64 }, (_, i) => raysFrom(i, DIAGONAL_STEPS));
+const ROOK_RAYS = Array.from({ length: 64 }, (_, i) => raysFrom(i, ORTHOGONAL_STEPS));
+const QUEEN_RAYS = Array.from({ length: 64 }, (_, i) => [...BISHOP_RAYS[i]!, ...ROOK_RAYS[i]!]);
+
+// One map holds both colors' attacks and the pawn-only attacks used by mobility.
+const WHITE_ATTACK = 1;
+const BLACK_ATTACK = 2;
+const WHITE_PAWN_ATTACK = 4;
+const BLACK_PAWN_ATTACK = 8;
+
+function addPieceAttacks(
+  board: Board,
+  attacks: Uint8Array,
+  index: number,
+  type: PieceType,
+  color: Color,
+): void {
+  const mask = color === "white" ? WHITE_ATTACK : BLACK_ATTACK;
+  if (type === "P") {
+    const rank = Math.floor(index / 8) + (color === "white" ? 1 : -1);
+    if (rank < 0 || rank > 7) return;
+    const file = index % 8;
+    const pawnMask = mask | (color === "white" ? WHITE_PAWN_ATTACK : BLACK_PAWN_ATTACK);
+    if (file > 0) attacks[rank * 8 + file - 1]! |= pawnMask;
+    if (file < 7) attacks[rank * 8 + file + 1]! |= pawnMask;
+  } else if (type === "N" || type === "K") {
+    const targets = type === "N" ? KNIGHT_TARGETS[index]! : KING_TARGETS[index]!;
+    for (const target of targets) attacks[target]! |= mask;
+  } else {
+    const rays =
+      type === "B" ? BISHOP_RAYS[index]! : type === "R" ? ROOK_RAYS[index]! : QUEEN_RAYS[index]!;
+    for (const ray of rays) {
+      for (const target of ray) {
+        // A friendly blocker is defended, but nothing beyond it is attacked.
+        attacks[target]! |= mask;
+        if (bAt(board, target)) break;
+      }
+    }
+  }
 }
 
 const PAWN_HASH_SIZE = 8192; // power of 2
@@ -201,6 +294,7 @@ export function evaluate(
   const { board } = state;
   let mgScore = 0;
   let egScore = 0;
+  const attacks = new Uint8Array(64);
 
   // Track pieces for additional evaluation
   let whiteBishops = 0;
@@ -234,6 +328,7 @@ export function evaluate(
     if (!piece) continue;
     const pc = getColorOf(piece);
     const type = piece[1] as PieceType;
+    addPieceAttacks(board, attacks, i, type, pc!);
     const base = PIECE_VALUES[type] || 0;
     let mgPst = 0;
     let egPst = 0;
@@ -479,8 +574,8 @@ export function evaluate(
   mgScore += whiteKingSafety;
   mgScore += blackKingSafety;
 
-  const whiteKingPressure = evaluateKingPressure(board, whiteKingIndex, "white", color, phase);
-  const blackKingPressure = evaluateKingPressure(board, blackKingIndex, "black", color, phase);
+  const whiteKingPressure = evaluateKingPressure(attacks, whiteKingIndex, "white", color, phase);
+  const blackKingPressure = evaluateKingPressure(attacks, blackKingIndex, "black", color, phase);
   mgScore += whiteKingPressure;
   mgScore += blackKingPressure;
 
@@ -514,7 +609,7 @@ export function evaluate(
     whiteQueens,
     "white",
     color,
-    blackPawnPositions,
+    attacks,
   );
   const blackMobility = evaluateMobility(
     board,
@@ -524,15 +619,15 @@ export function evaluate(
     blackQueens,
     "black",
     color,
-    whitePawnPositions,
+    attacks,
   );
   mgScore += whiteMobility;
   egScore += whiteMobility;
   mgScore += blackMobility;
   egScore += blackMobility;
 
-  const whiteLoosePieces = evaluateLoosePieces(board, "white", color, phase);
-  const blackLoosePieces = evaluateLoosePieces(board, "black", color, phase);
+  const whiteLoosePieces = evaluateLoosePieces(board, attacks, "white", color, phase);
+  const blackLoosePieces = evaluateLoosePieces(board, attacks, "black", color, phase);
   mgScore += whiteLoosePieces;
   egScore += Math.round(whiteLoosePieces * 0.7);
   mgScore += blackLoosePieces;
@@ -699,14 +794,14 @@ function isPassedPawn(
   pawnColor: Color,
   enemyPawns: PawnPos[],
 ): boolean {
-  const startRank = pawnColor === "white" ? rank + 1 : rank - 1;
-  const endRank = pawnColor === "white" ? 7 : 0;
-  const rankStep = pawnColor === "white" ? 1 : -1;
-
-  for (let r = startRank; pawnColor === "white" ? r <= endRank : r >= endRank; r += rankStep) {
-    if (enemyPawns.some((p) => p.file === file && p.rank === r)) return false;
-    if (file > 0 && enemyPawns.some((p) => p.file === file - 1 && p.rank === r)) return false;
-    if (file < 7 && enemyPawns.some((p) => p.file === file + 1 && p.rank === r)) return false;
+  // Only enemy pawns ahead on this or an adjacent file can stop a passer.
+  // Scan each pawn once instead of rescanning the list for every forward rank.
+  for (const pawn of enemyPawns) {
+    if (
+      Math.abs(pawn.file - file) <= 1 &&
+      (pawnColor === "white" ? pawn.rank > rank : pawn.rank < rank)
+    )
+      return false;
   }
   return true;
 }
@@ -854,7 +949,7 @@ function evaluateKingSafety(
 }
 
 function evaluateKingPressure(
-  board: Board,
+  attacks: Uint8Array,
   kingIndex: number,
   kingColor: Color,
   evalColor: Color,
@@ -862,24 +957,23 @@ function evaluateKingPressure(
 ): number {
   if (kingIndex < 0) return 0;
 
-  const enemy = oppositeColor(kingColor);
+  const ownMask = kingColor === "white" ? WHITE_ATTACK : BLACK_ATTACK;
+  const enemyMask = kingColor === "white" ? BLACK_ATTACK : WHITE_ATTACK;
   const sign = kingColor === evalColor ? 1 : -1;
-  const kf = kingIndex % 8;
-  const kr = Math.floor(kingIndex / 8);
+  const attackPenalty = KING_RING_ATTACK_PENALTY + Math.round(5 * phase);
   let pressure = 0;
 
-  for (let df = -1; df <= 1; df++) {
-    for (let dr = -1; dr <= 1; dr++) {
-      const f = kf + df;
-      const r = kr + dr;
-      if (f < 0 || f > 7 || r < 0 || r > 7) continue;
-      const idx = r * 8 + f;
-      if (squareAttackedByBoard(board, idx, enemy)) {
-        pressure += KING_RING_ATTACK_PENALTY + Math.round(5 * phase);
-        if (!squareAttackedByBoard(board, idx, kingColor)) {
-          pressure += KING_RING_LOOSE_SQUARE_PENALTY;
-        }
-      }
+  // The king's square itself is part of its ring in this evaluation term.
+  const kingAttacks = attacks[kingIndex]!;
+  if (kingAttacks & enemyMask) {
+    pressure += attackPenalty;
+    if (!(kingAttacks & ownMask)) pressure += KING_RING_LOOSE_SQUARE_PENALTY;
+  }
+  for (const index of KING_TARGETS[kingIndex]!) {
+    const squareAttacks = attacks[index]!;
+    if (squareAttacks & enemyMask) {
+      pressure += attackPenalty;
+      if (!(squareAttacks & ownMask)) pressure += KING_RING_LOOSE_SQUARE_PENALTY;
     }
   }
 
@@ -888,20 +982,22 @@ function evaluateKingPressure(
 
 function evaluateLoosePieces(
   board: Board,
+  attacks: Uint8Array,
   pieceColor: Color,
   evalColor: Color,
   phase: number,
 ): number {
-  const enemy = oppositeColor(pieceColor);
+  const ownMask = pieceColor === "white" ? WHITE_ATTACK : BLACK_ATTACK;
+  const enemyMask = pieceColor === "white" ? BLACK_ATTACK : WHITE_ATTACK;
   const sign = pieceColor === evalColor ? 1 : -1;
   let penalty = 0;
 
   for (let i = 0; i < 64; i++) {
     const piece = bAt(board, i);
     if (!piece || getColorOf(piece) !== pieceColor || piece[1] === "K") continue;
-    if (!squareAttackedByBoard(board, i, enemy)) continue;
+    if (!(attacks[i]! & enemyMask)) continue;
 
-    const defended = squareAttackedByBoard(board, i, pieceColor);
+    const defended = attacks[i]! & ownMask;
     const type = piece[1] as PieceType;
     let basePenalty = Math.round((PIECE_VALUES[type] || 0) * (type === "P" ? 0.08 : 0.12));
     basePenalty = Math.max(type === "P" ? 6 : 18, Math.min(basePenalty, type === "Q" ? 120 : 75));
@@ -912,112 +1008,9 @@ function evaluateLoosePieces(
   return -penalty * sign;
 }
 
-function squareAttackedByBoard(board: Board, targetIndex: number, attackerColor: Color): boolean {
-  const tf = targetIndex % 8;
-  const tr = Math.floor(targetIndex / 8);
-
-  const knightCode = attackerColor === "white" ? "wN" : "bN";
-  const knightJumps = [
-    [1, 2],
-    [2, 1],
-    [2, -1],
-    [1, -2],
-    [-1, -2],
-    [-2, -1],
-    [-2, 1],
-    [-1, 2],
-  ];
-  for (const jump of knightJumps) {
-    const [df, dr] = jump as [number, number];
-    // knight {
-    const f = tf + df;
-    const r = tr + dr;
-    if (f >= 0 && f <= 7 && r >= 0 && r <= 7 && board[r * 8 + f] === knightCode) return true;
-  }
-
-  const pawnCode = attackerColor === "white" ? "wP" : "bP";
-  const pawnDir = attackerColor === "white" ? -1 : 1;
-  const pawnRank = tr + pawnDir;
-  if (pawnRank >= 0 && pawnRank <= 7) {
-    if (tf > 0 && board[pawnRank * 8 + tf - 1] === pawnCode) return true;
-    if (tf < 7 && board[pawnRank * 8 + tf + 1] === pawnCode) return true;
-  }
-
-  const kingCode = attackerColor === "white" ? "wK" : "bK";
-  for (let df = -1; df <= 1; df++) {
-    for (let dr = -1; dr <= 1; dr++) {
-      if (df === 0 && dr === 0) continue;
-      const f = tf + df;
-      const r = tr + dr;
-      if (f >= 0 && f <= 7 && r >= 0 && r <= 7 && board[r * 8 + f] === kingCode) return true;
-    }
-  }
-
-  const orthoAttackers: Piece[] = attackerColor === "white" ? ["wR", "wQ"] : ["bR", "bQ"];
-  const diagAttackers: Piece[] = attackerColor === "white" ? ["wB", "wQ"] : ["bB", "bQ"];
-  if (
-    rayAttacked(
-      board,
-      tf,
-      tr,
-      [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-      ],
-      orthoAttackers,
-    )
-  )
-    return true;
-  if (
-    rayAttacked(
-      board,
-      tf,
-      tr,
-      [
-        [1, 1],
-        [1, -1],
-        [-1, 1],
-        [-1, -1],
-      ],
-      diagAttackers,
-    )
-  )
-    return true;
-  return false;
-}
-
-function rayAttacked(
-  board: Board,
-  file: number,
-  rank: number,
-  dirs: readonly (readonly [number, number])[],
-  attackers: Piece[],
-): boolean {
-  for (const _dir of dirs) {
-    const df = _dir[0]!;
-    const dr = _dir[1]!;
-    let f = file + df;
-    let r = rank + dr;
-    while (f >= 0 && f <= 7 && r >= 0 && r <= 7) {
-      const piece = bAt(board, r * 8 + f);
-      if (piece) {
-        // A blocker in this direction only blocks this ray; keep scanning the
-        // other directions instead of returning for the whole function.
-        if (attackers.includes(piece)) return true;
-        break;
-      }
-      f += df;
-      r += dr;
-    }
-  }
-  return false;
-}
-
 /**
- * Simplified mobility evaluation.
- * Counts pseudo-legal squares for each piece type (not blocked by own pieces).
+ * Counts pseudo-legal mobility with the same geometry as the attack map.
+ * Pawns restrict knight/bishop/rook mobility; queen mobility is unrestricted.
  */
 function evaluateMobility(
   board: Board,
@@ -1027,139 +1020,56 @@ function evaluateMobility(
   queens: number[],
   pieceColor: Color,
   evalColor: Color,
-  enemyPawns: PawnPos[],
+  attacks: Uint8Array,
 ): number {
   let bonus = 0;
   const sign = pieceColor === evalColor ? 1 : -1;
+  const enemyPawnMask = pieceColor === "white" ? BLACK_PAWN_ATTACK : WHITE_PAWN_ATTACK;
 
-  const enemyPawnAttacks = new Set<number>();
-  const attackDir = pieceColor === "white" ? -1 : 1;
-  for (const p of enemyPawns) {
-    const ar = p.rank + attackDir;
-    if (ar >= 0 && ar <= 7) {
-      if (p.file > 0) enemyPawnAttacks.add(ar * 8 + p.file - 1);
-      if (p.file < 7) enemyPawnAttacks.add(ar * 8 + p.file + 1);
-    }
-  }
-
-  // Knights
-  const knightJumps: ReadonlyArray<readonly [number, number]> = [
-    [1, 2],
-    [2, 1],
-    [2, -1],
-    [1, -2],
-    [-1, -2],
-    [-2, -1],
-    [-2, 1],
-    [-1, 2],
-  ];
-  for (const idx of knights) {
-    const f = idx % 8;
-    const r = Math.floor(idx / 8);
+  for (const index of knights) {
     let mobility = 0;
-    for (const jump of knightJumps) {
-      const df = jump[0];
-      const dr = jump[1];
-      const nf = f + df;
-      const nr = r + dr;
-      if (nf < 0 || nf > 7 || nr < 0 || nr > 7) continue;
-      const idx = nr * 8 + nf;
-      if (enemyPawnAttacks.has(idx)) continue;
-      const target = bAt(board, idx);
+    for (const targetIndex of KNIGHT_TARGETS[index]!) {
+      if (attacks[targetIndex]! & enemyPawnMask) continue;
+      const target = bAt(board, targetIndex);
       if (!target || getColorOf(target) !== pieceColor) mobility++;
     }
     bonus += mobility * MOBILITY_KNIGHT;
   }
 
-  // Bishops
-  const diagDirs: ReadonlyArray<readonly [number, number]> = [
-    [1, 1],
-    [1, -1],
-    [-1, 1],
-    [-1, -1],
-  ];
-  for (const idx of bishops) {
-    let mobility = 0;
-    for (const dir of diagDirs) {
-      const df = dir[0];
-      const dr = dir[1];
-      let f = (idx % 8) + df;
-      let r = Math.floor(idx / 8) + dr;
-      while (f >= 0 && f <= 7 && r >= 0 && r <= 7) {
-        const idx = r * 8 + f;
-        const target = bAt(board, idx);
-        if (!enemyPawnAttacks.has(idx)) {
-          if (!target) {
-            mobility++;
-          } else {
-            if (getColorOf(target) !== pieceColor) mobility++;
-          }
-        }
-        if (target) break;
-        f += df;
-        r += dr;
-      }
-    }
-    bonus += mobility * MOBILITY_BISHOP;
+  for (const index of bishops) {
+    bonus +=
+      sliderMobility(board, BISHOP_RAYS[index]!, pieceColor, attacks, enemyPawnMask) *
+      MOBILITY_BISHOP;
   }
-
-  // Rooks
-  const orthoDirs: ReadonlyArray<readonly [number, number]> = [
-    [1, 0],
-    [-1, 0],
-    [0, 1],
-    [0, -1],
-  ];
-  for (const idx of rooks) {
-    let mobility = 0;
-    for (const dir of orthoDirs) {
-      const df = dir[0];
-      const dr = dir[1];
-      let f = (idx % 8) + df;
-      let r = Math.floor(idx / 8) + dr;
-      while (f >= 0 && f <= 7 && r >= 0 && r <= 7) {
-        const idx = r * 8 + f;
-        const target = bAt(board, idx);
-        if (!enemyPawnAttacks.has(idx)) {
-          if (!target) {
-            mobility++;
-          } else {
-            if (getColorOf(target) !== pieceColor) mobility++;
-          }
-        }
-        if (target) break;
-        f += df;
-        r += dr;
-      }
-    }
-    bonus += mobility * MOBILITY_ROOK;
+  for (const index of rooks) {
+    bonus +=
+      sliderMobility(board, ROOK_RAYS[index]!, pieceColor, attacks, enemyPawnMask) * MOBILITY_ROOK;
   }
-
-  // Queens
-  const allDirs = [...diagDirs, ...orthoDirs];
-  for (const idx of queens) {
-    let mobility = 0;
-    for (const dir of allDirs) {
-      const df = dir[0];
-      const dr = dir[1];
-      let f = (idx % 8) + df;
-      let r = Math.floor(idx / 8) + dr;
-      while (f >= 0 && f <= 7 && r >= 0 && r <= 7) {
-        const target = bAt(board, r * 8 + f);
-        if (!target) {
-          mobility++;
-        } else {
-          if (getColorOf(target) !== pieceColor) mobility++;
-          break;
-        }
-        f += df;
-        r += dr;
-      }
-    }
-    bonus += mobility * MOBILITY_QUEEN;
+  for (const index of queens) {
+    bonus += sliderMobility(board, QUEEN_RAYS[index]!, pieceColor, attacks, 0) * MOBILITY_QUEEN;
   }
 
   return bonus * sign;
+}
+
+function sliderMobility(
+  board: Board,
+  rays: number[][],
+  pieceColor: Color,
+  attacks: Uint8Array,
+  enemyPawnMask: number,
+): number {
+  let mobility = 0;
+  for (const ray of rays) {
+    for (const index of ray) {
+      const target = bAt(board, index);
+      if (!(attacks[index]! & enemyPawnMask) && (!target || getColorOf(target) !== pieceColor)) {
+        mobility++;
+      }
+      if (target) break;
+    }
+  }
+  return mobility;
 }
 
 function evaluatePassedPawnRaces(
