@@ -1043,13 +1043,14 @@
   }
 
   .header-right {
-    gap: 0;
+    /* Keep the locale, theme, and menu controls apart so they are easy to tap. */
+    gap: 0.5rem;
   }
 
   .locale-morph-toggle {
     min-width: 3.1rem;
-    min-height: 1.6rem;
-    padding: 0.1rem 0.25rem;
+    min-height: 2.15rem;
+    padding: 0.15rem 0.35rem;
     font-size: 0.65rem;
   }
 
@@ -1064,9 +1065,9 @@
 
   .header-icon-btn,
   .header-right .vd-theme-switcher-toggle {
-    width: 1.85rem;
-    height: 1.85rem;
-    font-size: 1.05rem;
+    width: 2.15rem;
+    height: 2.15rem;
+    font-size: 1.1rem;
   }
 
   .header-controls {
